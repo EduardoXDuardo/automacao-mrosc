@@ -77,17 +77,39 @@ class DocumentProcessor:
         if not parts: return None
         
         prompt = f"""
-        Analise este documento de {estado} sobre o MROSC (Lei 13.019/2014).
-        Extraia os dados para a planilha e sugira um nome de arquivo curto e limpo.
+        Você está analisando documentos oficiais do estado de {estado} relacionados às parcerias entre o poder público e Organizações da Sociedade Civil (MROSC – Lei 13.019/2014).
+
+        Seu objetivo é identificar documentos RELEVANTES para análise de capacidades estatais.
+
+        Critérios de relevância:
+        - Regulamentação da Lei 13.019 (decretos, leis, portarias)
+        - Instrumentos operacionais (manuais, guias, fluxos, sistemas)
+        - Evidências de gestão de parcerias (monitoramento, avaliação, prestação de contas)
+        - Estruturas institucionais (comissões, órgãos responsáveis, sistemas)
+        - Procedimentos administrativos (chamamento público, seleção, execução)
+
+        Classifique como NÃO relevante:
+        - Notícias genéricas
+        - Conteúdos jornalísticos sem detalhamento técnico
+        - Menções superficiais à lei sem conteúdo operacional
+
+        Para documentos relevantes, extraia:
 
         Retorne APENAS JSON:
+
         {{
-            "relevante": bool,
-            "tipo": "Decreto" | "Lei" | "Página de internet" | "Notícia" | "Manual",
-            "titulo": "Título oficial (ex: Decreto nº 61.981/2016)",
-            "consideracao": "Resumo técnico do conteúdo para a planilha",
-            "id_unico": "ID para evitar duplicados (ex: dec-61981)",
-            "nome_arquivo_sugerido": "ex: Decreto_61981"
+            "relevante": true | false,
+            "tipo": "Decreto" | "Lei" | "Portaria" | "Resolução" | "Manual" | "Guia" | "Sistema" | "Página institucional" | "Notícia",
+            "titulo": "Título oficial completo do documento",
+            "ano": "Ano do documento (se identificado)",
+            "estado": "{estado}",
+            "dimensao": "Normativa" | "Operacional" | "Governança" | "Controle" | "Capacitação",
+            "instrumento_mrosc": "Regulamentação" | "Execução" | "Monitoramento" | "Prestação de contas" | "Chamamento público" | "Outro",
+            "consideracao": "Resumo técnico objetivo destacando o que o documento regula ou operacionaliza",
+            "tem_fluxo_operacional": true | false,
+            "tem_instrumentos_gestao": true | false,
+            "id_unico": "ID curto padronizado (ex: dec-61981-sp)",
+            "nome_arquivo_sugerido": "Nome curto padronizado (ex: Decreto_61981_SP)"
         }}
         """
         try:
@@ -185,9 +207,51 @@ class MROSCAutomator:
     def _collect_links(self) -> List[str]:
         found = []
         queries = [
-            f'decreto estadual mrosc {self.estado} 13.019',
-            f'site:{self.uf.lower()}.gov.br "13.019" decreto',
-            f'manual parcerias organizações sociedade civil {self.estado}'
+            # Base legal direta
+            f'"Lei 13.019" {self.estado}',
+            f'marco regulatório organizações sociedade civil {self.estado}',
+            f'MROSC {self.estado} regulamentação',
+
+            # Decretos e normativas
+            f'decreto regulamenta lei 13.019 {self.estado}',
+            f'decreto parcerias OSC {self.estado}',
+            f'instrução normativa MROSC {self.estado}',
+            f'resolução parcerias sociedade civil {self.estado}',
+            f'portaria parcerias OSC {self.estado}',
+
+            # Instrumentos operacionais
+            f'manual parcerias OSC {self.estado}',
+            f'guia MROSC {self.estado}',
+            f'cartilha organizações sociedade civil {self.estado}',
+            f'fluxo prestação de contas OSC {self.estado}',
+
+            # Sistemas e gestão
+            f'sistema gestão parcerias OSC {self.estado}',
+            f'plataforma parcerias governo {self.estado}',
+            f'chamamento público OSC {self.estado}',
+
+            # Transparência e controle
+            f'diário oficial {self.estado} organizações sociedade civil',
+            f'transferências voluntárias OSC {self.estado}',
+            f'prestação de contas parceria OSC {self.estado}',
+
+            # Busca restrita a domínios oficiais
+            f'site:{self.uf.lower()}.gov.br "organizações da sociedade civil"',
+            f'site:{self.uf.lower()}.gov.br "parcerias"',
+            f'site:{self.uf.lower()}.gov.br "chamamento público"',
+            
+            # Queries com a liguagem da burocracia
+            f'"termo de colaboração" {self.estado}',
+            f'"termo de fomento" {self.estado}',
+            f'"acordo de cooperação" OSC {self.estado}',
+            f'"comissão de monitoramento" OSC {self.estado}',
+
+            # Queries orientadas ao seu framework analítico
+            f'monitoramento avaliação parcerias OSC {self.estado}',
+            f'capacitação OSC governo {self.estado}',
+            f'governança parcerias sociedade civil {self.estado}',
+            f'fluxo administrativo parcerias OSC {self.estado}',
+            f'indicadores parceria governo OSC {self.estado}'
         ]
         with DDGS() as ddgs:
             for q in queries:
