@@ -21,6 +21,10 @@ from ddgs import DDGS
 from pdf2image import convert_from_path
 from urllib3.exceptions import InsecureRequestWarning
 
+from config import Config
+from prompts import get_analysis_prompt
+from queries import get_search_queries
+
 # --- CONFIGURAÇÃO ---
 warnings.simplefilter('ignore', InsecureRequestWarning)
 load_dotenv()
@@ -31,11 +35,6 @@ logging.basicConfig(
     handlers=[logging.StreamHandler(sys.stdout)]
 )
 logger = logging.getLogger("MROSC_ARCHIVER")
-
-class Config:
-    API_KEY = os.getenv("GEMINI_API_KEY")
-    MODEL_ID = "gemini-3.1-flash-lite-preview" 
-    BLACKLIST = ['edital', 'chamamento', 'esporte', 'futebol', 'concurso', 'vaga', 'noticia']
 
 class DocumentProcessor:
     def __init__(self, api_key: str):
@@ -76,42 +75,8 @@ class DocumentProcessor:
     def analyze(self, parts: List[types.Part], url: str, estado: str) -> Optional[Dict]:
         if not parts: return None
         
-        prompt = f"""
-        Você está analisando documentos oficiais do estado de {estado} relacionados às parcerias entre o poder público e Organizações da Sociedade Civil (MROSC – Lei 13.019/2014).
-
-        Seu objetivo é identificar documentos RELEVANTES para análise de capacidades estatais.
-
-        Critérios de relevância:
-        - Regulamentação da Lei 13.019 (decretos, leis, portarias)
-        - Instrumentos operacionais (manuais, guias, fluxos, sistemas)
-        - Evidências de gestão de parcerias (monitoramento, avaliação, prestação de contas)
-        - Estruturas institucionais (comissões, órgãos responsáveis, sistemas)
-        - Procedimentos administrativos (chamamento público, seleção, execução)
-
-        Classifique como NÃO relevante:
-        - Notícias genéricas
-        - Conteúdos jornalísticos sem detalhamento técnico
-        - Menções superficiais à lei sem conteúdo operacional
-
-        Para documentos relevantes, extraia:
-
-        Retorne APENAS JSON:
-
-        {{
-            "relevante": true | false,
-            "tipo": "Decreto" | "Lei" | "Portaria" | "Resolução" | "Manual" | "Guia" | "Sistema" | "Página institucional" | "Notícia",
-            "titulo": "Título oficial completo do documento",
-            "ano": "Ano do documento (se identificado)",
-            "estado": "{estado}",
-            "dimensao": "Normativa" | "Operacional" | "Governança" | "Controle" | "Capacitação",
-            "instrumento_mrosc": "Regulamentação" | "Execução" | "Monitoramento" | "Prestação de contas" | "Chamamento público" | "Outro",
-            "consideracao": "Resumo técnico objetivo destacando o que o documento regula ou operacionaliza",
-            "tem_fluxo_operacional": true | false,
-            "tem_instrumentos_gestao": true | false,
-            "id_unico": "ID curto padronizado (ex: dec-61981-sp)",
-            "nome_arquivo_sugerido": "Nome curto padronizado (ex: Decreto_61981_SP)"
-        }}
-        """
+        prompt = get_analysis_prompt(estado)
+        
         try:
             response = self.client.models.generate_content(
                 model=Config.MODEL_ID,
@@ -206,53 +171,8 @@ class MROSCAutomator:
 
     def _collect_links(self) -> List[str]:
         found = []
-        queries = [
-            # Base legal direta
-            f'"Lei 13.019" {self.estado}',
-            f'marco regulatório organizações sociedade civil {self.estado}',
-            f'MROSC {self.estado} regulamentação',
-
-            # Decretos e normativas
-            f'decreto regulamenta lei 13.019 {self.estado}',
-            f'decreto parcerias OSC {self.estado}',
-            f'instrução normativa MROSC {self.estado}',
-            f'resolução parcerias sociedade civil {self.estado}',
-            f'portaria parcerias OSC {self.estado}',
-
-            # Instrumentos operacionais
-            f'manual parcerias OSC {self.estado}',
-            f'guia MROSC {self.estado}',
-            f'cartilha organizações sociedade civil {self.estado}',
-            f'fluxo prestação de contas OSC {self.estado}',
-
-            # Sistemas e gestão
-            f'sistema gestão parcerias OSC {self.estado}',
-            f'plataforma parcerias governo {self.estado}',
-            f'chamamento público OSC {self.estado}',
-
-            # Transparência e controle
-            f'diário oficial {self.estado} organizações sociedade civil',
-            f'transferências voluntárias OSC {self.estado}',
-            f'prestação de contas parceria OSC {self.estado}',
-
-            # Busca restrita a domínios oficiais
-            f'site:{self.uf.lower()}.gov.br "organizações da sociedade civil"',
-            f'site:{self.uf.lower()}.gov.br "parcerias"',
-            f'site:{self.uf.lower()}.gov.br "chamamento público"',
-            
-            # Queries com a liguagem da burocracia
-            f'"termo de colaboração" {self.estado}',
-            f'"termo de fomento" {self.estado}',
-            f'"acordo de cooperação" OSC {self.estado}',
-            f'"comissão de monitoramento" OSC {self.estado}',
-
-            # Queries orientadas ao seu framework analítico
-            f'monitoramento avaliação parcerias OSC {self.estado}',
-            f'capacitação OSC governo {self.estado}',
-            f'governança parcerias sociedade civil {self.estado}',
-            f'fluxo administrativo parcerias OSC {self.estado}',
-            f'indicadores parceria governo OSC {self.estado}'
-        ]
+        queries = get_search_queries(self.uf, self.estado)
+        
         with DDGS() as ddgs:
             for q in queries:
                 try:
