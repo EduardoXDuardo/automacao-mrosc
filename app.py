@@ -262,7 +262,7 @@ if st.session_state.running_state != "idle":
         if not st.session_state.automator:
             st.session_state.automator = MROSCAutomator(uf=estado, estado=nome_estado)
             with st.spinner("Realizando buscas na internet... (Aguarde)"):
-                st.session_state.links = st.session_state.automator._collect_links()
+                st.session_state.links = st.session_state.automator.searcher.collect_links()
             st.session_state.manual_step = "next"
             safe_rerun()
 
@@ -273,7 +273,7 @@ if st.session_state.running_state != "idle":
 
         if idx >= total:
             st.success(f"Fim da lista! {total} documentos processados.")
-            automator._save(incremental=False)
+            automator.output_manager.save_excel(incremental=False)
             if st.button("Concluir Processo"):
                 reset_state()
                 safe_rerun()
@@ -289,7 +289,7 @@ if st.session_state.running_state != "idle":
 
         if st.session_state.manual_step == "analyzing":
             with st.spinner("Baixando documento e processando com IA..."):
-                temp_path = automator._download(url)
+                temp_path = automator.downloader.download(url)
                 if not temp_path:
                     st.error("Falha ao baixar o arquivo.")
                     time.sleep(1)
