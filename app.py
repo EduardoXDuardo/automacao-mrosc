@@ -56,8 +56,12 @@ if "current_temp_path" not in st.session_state:
     st.session_state.current_temp_path = None
 if "modo_manual" not in st.session_state:
     st.session_state.modo_manual = False
+if "dialog_open" not in st.session_state:
+    st.session_state.dialog_open = False
+if "dialog_action" not in st.session_state:
+    st.session_state.dialog_action = None
 
-st.markdown('<div class="main-title" style="font-size: 1.8em; margin-bottom: 20px;">🤖 Automação MROSC</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title" style="font-size: 1.8em; margin-bottom: 20px;">Automação MROSC</div>', unsafe_allow_html=True)
 
 st.sidebar.header("⚙️ Configurações da Busca")
 estado = st.sidebar.selectbox("Estado alvo (UF)", [
@@ -76,6 +80,69 @@ def safe_rerun():
     else:
         st.experimental_rerun()
 
+def process_manual_action(action, url, path, analysis, automator):
+    if action == "approve":
+        automator.process_and_save_document(url, Path(path), analysis)
+        st.toast("Documento aprovado e salvo!", icon="✅")
+    elif action == "skip":
+        st.toast("Documento pulado.", icon="⏭️")
+        
+    if path and os.path.exists(path):
+        try: os.unlink(path)
+        except: pass
+        
+    st.session_state.current_idx += 1
+    st.session_state.manual_step = "next"
+    safe_rerun()
+
+def render_document_review(url, path, analysis, automator, idx, total):
+    st.markdown(f"### Revisando Documento {idx + 1} de {total}")
+    st.markdown(f"**🔗 Fonte:** [{url}]({url})")
+    
+    act1, act2 = st.columns(2)
+    with act1:
+        if st.button("✅ Aprovar", use_container_width=True, type="primary", key=f"btn_approve_{idx}"):
+            process_manual_action("approve", url, path, analysis, automator)
+    with act2:
+        if st.button("⏭️ Pular", use_container_width=True, key=f"btn_skip_{idx}"):
+            process_manual_action("skip", url, path, analysis, automator)
+
+    st.markdown("---")
+    
+    # --- VISUALIZADORES ---
+    c_doc, c_ia = st.columns([1.2, 1])
+    with c_doc:
+        st.markdown("**Documento Original**")
+        try:
+            if path.endswith(".html"):
+                with open(path, "r", encoding="utf-8", errors="ignore") as f:
+                    content = f.read()
+                    import streamlit.components.v1 as components
+                    components.html(f"<div style='border: 1px solid #ccc; padding:10px; border-radius:5px; background: white;'>{content}</div>", height=600, scrolling=True)
+            elif path.endswith(".pdf"):
+                with open(path, "rb") as f:
+                    base64_pdf = base64.b64encode(f.read()).decode('utf-8')
+                pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="600" type="application/pdf" style="border: 1px solid #ccc; border-radius:5px;"></iframe>'
+                st.markdown(pdf_display, unsafe_allow_html=True)
+            else:
+                st.warning(f"Arquivo não renderizável (formato desconhecido).")
+        except Exception as e:
+            st.error(f"Erro ao carregar visualização: {e}")
+
+    with c_ia:
+        st.markdown("**Análise da IA**")
+        
+        with st.container(height=600):
+            if isinstance(analysis, dict):
+                if analysis.get("relevante"):
+                    st.success("**Sugestão: RELEVANTE**")
+                else:
+                    st.error("**Sugestão: NÃO Relevante**")
+                
+                st.json(analysis, expanded=True)
+            else:
+                st.error("Falha na análise ou não obteve JSON válido.")
+
 def reset_state():
     st.session_state.running_state = "idle"
     st.session_state.automator = None
@@ -92,7 +159,7 @@ if st.session_state.running_state == "idle":
     st.info("Configure os parâmetros na barra lateral e inicie o processo para encontrar documentos referentes ao MROSC no estado selecionado.")
     col_btn, _ = st.columns([1, 2])
     with col_btn:
-        if st.button("🚀 Iniciar Automação", use_container_width=True, type="primary"):
+        if st.button("Iniciar Automação", use_container_width=True, type="primary"):
             st.session_state.modo_manual = modo_manual
             st.session_state.running_state = "running_manual" if modo_manual else "running_auto"
             safe_rerun()
@@ -101,7 +168,7 @@ if st.session_state.running_state == "idle":
 if st.session_state.running_state != "idle":
     col1, col2 = st.columns([4, 1])
     with col2:
-        if st.button("⏹️ Parar / Cancelar Processo", use_container_width=True):
+        if st.button("⏹️ Parar", use_container_width=True):
             reset_state()
             safe_rerun()
 
@@ -128,10 +195,10 @@ if st.session_state.running_state != "idle":
         
         col1, col2 = st.columns(2)
         with col1:
-            st.markdown("**📥 Último Arquivo Processado**")
+            st.markdown("**Último Arquivo Processado**")
             viewer_placeholder = st.empty()
         with col2:
-            st.markdown("**🧠 Última Análise**")
+            st.markdown("**Última Análise**")
             ai_placeholder = st.empty()
 
         if not st.session_state.automator:
@@ -181,11 +248,11 @@ if st.session_state.running_state != "idle":
                         st.error("⚠️ Falha na análise.")
             elif event["type"] == "done":
                 progress_bar.progress(1.0)
-                status_text.success(f"🎉 Finalizado! {event['results_count']} documentos relevantes salvos com sucesso.")
+                status_text.success(f"Finalizado! {event['results_count']} documentos relevantes salvos com sucesso.")
                 st.balloons()
         
         st.session_state.automator.run(ui_callback=automator_callback)
-        st.success("🏁 Automação em Lote concluída.")
+        st.success("Automação em Lote concluída.")
         if st.button("Finalizar e Voltar", key="btn_finalizar"):
             reset_state()
             safe_rerun()
@@ -248,77 +315,19 @@ if st.session_state.running_state != "idle":
                 safe_rerun()
 
         if st.session_state.manual_step == "waiting":
-            st.markdown("---")
-            
-            def go_next_manual():
-                if st.session_state.current_temp_path and os.path.exists(st.session_state.current_temp_path):
-                    try: os.unlink(st.session_state.current_temp_path)
-                    except: pass
-                st.session_state.current_idx += 1
-                st.session_state.manual_step = "next"
-            
-            # --- MENU DE AÇÕES MANUAIS NO TOPO ---
-            c_info, act1, act2, act3 = st.columns([1.5, 1, 1, 1])
-            with c_info:
-                st.markdown(f"**🔗 Fonte Data:** [{url}]({url})")
-                st.markdown("<span style='color:#7F8C8D; font-size:0.9em;'>Defina o destino deste documento para continuar</span>", unsafe_allow_html=True)
-            with act1:
-                if st.button("✅ Aprovar", use_container_width=True, type="primary"):
-                    automator.process_and_save_document(url, Path(st.session_state.current_temp_path), st.session_state.current_analysis)
-                    st.toast("Salvamento concluído! Movendo para o próximo...", icon="✅")
-                    time.sleep(0.8)
-                    go_next_manual()
-                    safe_rerun()
-            with act2:
-                if st.button("🚫 Rejeitar", use_container_width=True):
-                    st.toast("Documento rejeitado. Avançando...", icon="🗑️")
-                    time.sleep(0.5)
-                    go_next_manual()
-                    safe_rerun()
-            with act3:
-                if st.button("⏭️ Pular", use_container_width=True):
-                    go_next_manual()
-                    safe_rerun()
-                    
-            st.markdown("<br>", unsafe_allow_html=True)
-            
-            # --- VISUALIZADORES ---
-            c_doc, c_ia = st.columns([1.2, 1])
-            with c_doc:
-                st.markdown("**📄 Documento Original**")
-                path = st.session_state.current_temp_path
-                try:
-                    if path.endswith(".html"):
-                        with open(path, "r", encoding="utf-8", errors="ignore") as f:
-                            content = f.read()
-                            import streamlit.components.v1 as components
-                            components.html(f"<div style='border: 1px solid #ccc; padding:10px; border-radius:5px;'>{content}</div>", height=600, scrolling=True)
-                    elif path.endswith(".pdf"):
-                        with open(path, "rb") as f:
-                            base64_pdf = base64.b64encode(f.read()).decode('utf-8')
-                        pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="600" type="application/pdf" style="border: 1px solid #ccc; border-radius:5px;"></iframe>'
-                        st.markdown(pdf_display, unsafe_allow_html=True)
-                    else:
-                        st.warning(f"Arquivo não renderizável (formato desconhecido).")
-                except Exception as e:
-                    st.error(f"Erro ao carregar visualização: {e}")
-
-            with c_ia:
-                st.markdown("**🧠 Análise da IA**")
-                analysis = st.session_state.current_analysis
-                if isinstance(analysis, dict):
-                    if analysis.get("relevante"):
-                        st.success("🎯 **Sugestão: DOCUMENTO RELEVANTE**")
-                    else:
-                        st.error("⚠️ **Sugestão: NÃO Relevante**")
-                    
-                    st.json(analysis, expanded=True)
-                else:
-                    st.error("Falha na análise ou não obteve JSON válido.")
+            # Exibe o visualizador imediatamente sem precisar de modal/dialog
+            render_document_review(
+                url, 
+                st.session_state.current_temp_path, 
+                st.session_state.current_analysis, 
+                automator, 
+                idx, 
+                total
+            )
 
 # Visualizador de Logs 
 st.markdown("---")
-st.markdown("**📝 Últimos Logs**")
+st.markdown("**Últimos Logs**")
 if os.path.exists("logs/automacao.log"):
     with open("logs/automacao.log", "r", encoding="utf-8") as f:
         lines = f.readlines()[-15:]
