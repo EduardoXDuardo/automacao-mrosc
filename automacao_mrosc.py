@@ -21,19 +21,12 @@ from ddgs import DDGS
 from pdf2image import convert_from_path
 from urllib3.exceptions import InsecureRequestWarning
 
-from config import Config
+from config import Config, logger
 from prompts import get_analysis_prompt
 from queries import get_search_queries
 
 # --- CONFIGURAÇÃO ---
 warnings.simplefilter('ignore', InsecureRequestWarning)
-
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] %(message)s',
-    handlers=[logging.StreamHandler(sys.stdout)]
-)
-logger = logging.getLogger("MROSC_ARCHIVER")
 
 class DocumentProcessor:
     def __init__(self, api_key: str):
@@ -108,7 +101,7 @@ class MROSCAutomator:
     def __init__(self, uf: str, estado: str):
         self.uf = uf.upper()
         self.estado = estado
-        self.processor = DocumentProcessor(Config.API_KEY)
+        self.processor = DocumentProcessor(Config.get_api_key())
         
         self.timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         self.base_dir = Path("output") / f"{self.uf}_{self.timestamp}"

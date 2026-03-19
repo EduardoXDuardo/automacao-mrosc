@@ -1,11 +1,28 @@
 import os
+import logging
 from dotenv import load_dotenv
 
 load_dotenv()
 
+# Configuração de Logging
+os.makedirs("logs", exist_ok=True)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.FileHandler("logs/automacao.log", encoding="utf-8"),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger("mrosc_automator")
+
 class Config:
     # --- Configurações da IA ---
-    API_KEY = os.getenv("GEMINI_API_KEY")
+    @classmethod
+    def get_api_key(cls):
+        load_dotenv(override=True)
+        return os.getenv("GEMINI_API_KEY")
+
     MODEL_ID = "gemini-3.1-flash-lite-preview" 
 
     # --- Configurações de Execução ---

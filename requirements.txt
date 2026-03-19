@@ -7,3 +7,4 @@ python-dotenv
 google-genai
 ddgs
 pdf2image
+streamlit

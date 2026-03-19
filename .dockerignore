@@ -1,0 +1,17 @@
+# Configurações locais e caches
+__pycache__/
+*.pyc
+
+
+# Diretórios de saída de dados
+output/
+logs/
+
+# Git
+.git/
+.gitignore
+
+# Ambientes virtuais (se existirem localmente)
+venv/
+.venv/
+env/
