@@ -113,68 +113,96 @@ class MROSCAutomator:
         self.results = []
         self.seen_ids = set()
 
-    def run(self):
+    def process_and_save_document(self, url: str, temp_path: Path, analysis: dict) -> bool:
+        """Salva o documento nos resultados e o move para a pasta final. Retorna True se salvo com sucesso."""
+        uid = analysis.get("id_unico", f"rand_{hashlib.md5(url.encode()).hexdigest()}")
+        if uid not in self.seen_ids:
+            self.seen_ids.add(uid)
+            
+            # Conta apenas os já aprovados iterativamente para gerar doc_id incremental
+            count = len(self.results) + 1
+            doc_id = f"{self.uf}{count:02d}"
+            ext = temp_path.suffix
+            clean_name = re.sub(r'[^\w\-]', '_', str(analysis.get("nome_arquivo_sugerido", "documento")))
+            
+            final_filename = f"{doc_id}_{clean_name}{ext}"
+            final_path = self.archives_dir / final_filename
+            
+            try:
+                import shutil
+                shutil.copy(str(temp_path), str(final_path))
+            except Exception:
+                temp_path.replace(final_path)
+                
+            logger.info(f"✅ DOCUMENTO SALVO! Tipo: {analysis.get('tipo', 'N/A')} -> {final_filename}")
+            
+            result_dict = {
+                "UNIDADE FEDERATIVA": self.estado,
+                "CÓDIGO DO DOCUMENTO": doc_id,
+                "TIPO": analysis.get("tipo", "N/A"),
+                "TITULO": analysis.get("titulo", "N/A"),
+                "LINK": url,
+                "CONSIDERAÇÃO": analysis.get("consideracao", ""),
+                "ARQUIVO LOCAL": f"archives/{final_filename}"
+            }
+            self.results.append(result_dict)
+            self._save(incremental=True)
+            return True
+        return False
+
+    def run(self, ui_callback: Optional[callable] = None):
         logger.info(f"🚀 Iniciando automação {self.uf} | Pasta: {self.base_dir}")
+        if ui_callback: ui_callback({"type": "status", "message": f"Iniciando automação {self.uf}..."})
+        
         links = self._collect_links()
         
         total_links = len(links)
         logger.info(f"🎯 Total de links filtrados a serem analisados: {total_links}")
+        if ui_callback: ui_callback({"type": "links_found", "total": total_links, "links": links})
         
         count = 1
         for idx, url in enumerate(links, 1):
             logger.info(f"")
             logger.info(f"--- [ {idx} / {total_links} ] ---")
             logger.info(f"🔍 Baixando e extraindo: {url}")
+            if ui_callback: ui_callback({"type": "downloading", "url": url, "current": idx, "total": total_links})
+            
             temp_path = self._download(url)
             if not temp_path: 
                 continue
 
             try:
+                if ui_callback: ui_callback({"type": "downloaded", "path": str(temp_path), "url": url})
+                
                 parts = self.processor.get_document_content(temp_path)
                 if not parts:
                     logger.warning("⚠️ Nenhum conteúdo extraído. Pulando.")
+                    if ui_callback: ui_callback({"type": "error", "message": "Nenhum conteúdo extraído."})
                     continue
                 
                 logger.info("🧠 Solicitando análise ao Gemini...")
+                if ui_callback: ui_callback({"type": "analyzing", "url": url})
                 analysis = self.processor.analyze(parts, url, self.estado)
+                
+                if ui_callback: ui_callback({"type": "analysis_done", "url": url, "analysis": analysis})
                 
                 # Verificação segura de dicionário e chave 'relevante'
                 if isinstance(analysis, dict) and analysis.get("relevante"):
-                    uid = analysis.get("id_unico", f"rand_{hashlib.md5(url.encode()).hexdigest()}")
-                    if uid not in self.seen_ids:
-                        self.seen_ids.add(uid)
-                        
-                        doc_id = f"{self.uf}{count:02d}"
-                        ext = temp_path.suffix
-                        clean_name = re.sub(r'[^\w\-]', '_', str(analysis.get("nome_arquivo_sugerido", "documento")))
-                        
-                        final_filename = f"{doc_id}_{clean_name}{ext}"
-                        final_path = self.archives_dir / final_filename
-                        
-                        temp_path.replace(final_path)
-                        logger.info(f"✅ DOCUMENTO RELEVANTE! Tipo: {analysis.get('tipo', 'N/A')}")
-                        logger.info(f"💾 Movido para: {final_filename}")
-                        
-                        self.results.append({
-                            "UNIDADE FEDERATIVA": self.estado,
-                            "CÓDIGO DO DOCUMENTO": doc_id,
-                            "TIPO": analysis.get("tipo", "N/A"),
-                            "TITULO": analysis.get("titulo", "N/A"),
-                            "LINK": url,
-                            "CONSIDERAÇÃO": analysis.get("consideracao", ""),
-                            "ARQUIVO LOCAL": f"archives/{final_filename}"
-                        })
+                    salvo = self.process_and_save_document(url, temp_path, analysis)
+                    if salvo:
+                        if ui_callback: 
+                            final_path = self.archives_dir / Path(self.results[-1]["ARQUIVO LOCAL"]).name
+                            ui_callback({"type": "saved", "result": self.results[-1], "path": str(final_path)})
                         count += 1
-                        
-                        # Salva incrementalmente para não perder dados
-                        self._save(incremental=True)
-                        
                     else:
-                        logger.info(f"⏭️ Documento duplicado ignorado: {uid}")
+                        logger.info(f"⏭️ Documento duplicado ignorado.")
+                        if ui_callback: ui_callback({"type": "ignored", "reason": "Duplicado"})
                 else:
                     logger.info("❌ Documento avaliado como NÃO RELEVANTE pelo modelo.")
+                    if ui_callback: ui_callback({"type": "ignored", "reason": "Não relevante"})
             except Exception as e:
                 logger.error(f"❌ Erro ao processar arquivo: {e}")
+                if ui_callback: ui_callback({"type": "error", "message": str(e)})
             finally:
                 if temp_path.exists(): 
                     temp_path.unlink()
@@ -183,6 +211,7 @@ class MROSCAutomator:
 
         logger.info(f"")
         self._save(incremental=False)
+        if ui_callback: ui_callback({"type": "done", "results_count": len(self.results), "excel": str(self.base_dir / "dados-compilados.xlsx")})
 
     def _collect_links(self) -> List[str]:
         found = []
