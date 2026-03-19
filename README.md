@@ -45,8 +45,15 @@ A forma mais fácil de rodar o projeto e a interface de usuário, pois configura
 docker build -t automacao-mrosc .
 ```
 2. Rode o container:
+
+**No Linux/Mac ou PowerShell:**
 ```bash
-docker run -p 8501:8501 -v ${PWD}/output:/app/output -v ${PWD}/logs:/app/logs -v ${PWD}/.env:/app/.env automacao-mrosc
+docker run -p 8501:8501 -v "${PWD}/output:/app/output" -v "${PWD}/logs:/app/logs" -v "${PWD}/.env:/app/.env" automacao-mrosc
+```
+
+**No Git Bash (Windows):**
+```bash
+docker run -p 8501:8501 -v "/$(pwd)/output:/app/output" -v "/$(pwd)/logs:/app/logs" -v "/$(pwd)/.env:/app/.env" automacao-mrosc
 ```
 
 ### Método 2: Instalação Manual (Local)
