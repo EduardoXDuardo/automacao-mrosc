@@ -8,9 +8,18 @@ from bs4 import BeautifulSoup
 from google import genai
 from google.genai import types
 from pdf2image import convert_from_path
+from pydantic import BaseModel, Field
 
 from config import Config, logger
 from prompts import get_analysis_prompt
+
+class AnalysisResult(BaseModel):
+    relevante: bool = Field(description="Booleano que indica se o documento é relevante para o assunto MROSC.")
+    id_unico: str = Field(description="Um identificador curto e único para este documento baseado no título.")
+    nome_arquivo_sugerido: str = Field(description="Um nome de arquivo curto, em snake_case, sem extensão, representando o arquivo.")
+    tipo: str = Field(description="A categoria legal ou tipo do documento (ex: Edital, Portaria, Cartilha, etc).")
+    titulo: str = Field(description="O título oficial ou manchete principal do documento.")
+    consideracao: str = Field(description="Uma breve justificativa da sua análise informando por que é ou não é relevante.")
 
 class DocumentProcessor:
     def __init__(self, api_key: str):
@@ -60,22 +69,16 @@ class DocumentProcessor:
                 contents=[prompt] + parts,
                 config=types.GenerateContentConfig(
                     temperature=0.0, 
-                    response_mime_type="application/json"
+                    response_mime_type="application/json",
+                    response_schema=AnalysisResult
                 )
             )
             
-            # Limpeza e parsing
             raw_text = response.text.strip()
-            # Remove blocos de código markdown se o modelo ignorar o response_mime_type
             raw_text = re.sub(r'```json\n?|```', '', raw_text)
             
             data = json.loads(raw_text)
-
-            # Tratamento de erro: se retornar uma lista, pega o primeiro elemento
-            if isinstance(data, list) and len(data) > 0:
-                data = data[0]
-            
-            return data if isinstance(data, dict) else None
+            return data
 
         except Exception as e:
             logger.error(f"⚠️ Falha no parsing da análise Gemini: {e}")
