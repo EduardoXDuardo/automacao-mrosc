@@ -1,10 +1,31 @@
-﻿import streamlit as st
+import streamlit as st
+import streamlit.components.v1 as components
 import os
 import time
 import base64
 import shutil
 from pathlib import Path
-from config import logger 
+from config import logger
+from automacao_mrosc import MROSCAutomator
+
+NOMES_ESTADOS = {
+    "AC": "Acre", "AL": "Alagoas", "AP": "Amapá", "AM": "Amazonas",
+    "BA": "Bahia", "CE": "Ceará", "DF": "Distrito Federal", "ES": "Espírito Santo",
+    "GO": "Goiás", "MA": "Maranhão", "MT": "Mato Grosso", "MS": "Mato Grosso do Sul",
+    "MG": "Minas Gerais", "PA": "Pará", "PB": "Paraíba", "PR": "Paraná",
+    "PE": "Pernambuco", "PI": "Piauí", "RJ": "Rio de Janeiro", "RN": "Rio Grande do Norte",
+    "RS": "Rio Grande do Sul", "RO": "Rondônia", "RR": "Roraima", "SC": "Santa Catarina",
+    "SP": "São Paulo", "SE": "Sergipe", "TO": "Tocantins"
+}
+
+
+def format_log_html(lines: list[str]) -> str:
+    """Formata linhas de log para exibição HTML no terminal visual."""
+    log_content = "".join(lines)
+    formatted = log_content.replace("INFO", "<span class='info'>[INFO]</span>")\
+                           .replace("ERROR", "<span class='error'>[ERROR]</span>")\
+                           .replace("WARNING", "<span class='warning'>[WARNING]</span>")
+    return formatted
 
 st.set_page_config(page_title="Automação MROSC", layout="wide")
 
@@ -66,14 +87,6 @@ st.markdown("""
     .stButton>button[kind="secondary"]:hover {
         background: #e2e8f0;
         transform: translateY(-2px);
-    }
-    
-    [data-testid="stSidebar"] {
-        background-color: #f8fafc;
-        border-right: 1px solid #e2e8f0;
-    }
-    [data-testid="stSidebar"] * {
-        color: #0f172a;
     }
 
     div.stMetric {
@@ -151,7 +164,6 @@ st.markdown('''
 </div>
 ''', unsafe_allow_html=True)
 
-st.sidebar.image("https://cdn-icons-png.flaticon.com/512/3214/3214746.png", width=60)
 st.sidebar.markdown("### ⚙️ Painel de Controle")
 st.sidebar.markdown("Configure os filtros abaixo:")
 estado = st.sidebar.selectbox("Estado alvo (UF)", [
@@ -176,7 +188,7 @@ def process_manual_action(action, url, path, analysis, automator):
         
     if path and os.path.exists(path):
         try: os.unlink(path)
-        except: pass
+        except Exception: pass
         
     st.session_state.current_idx += 1
     st.session_state.manual_step = "next"
@@ -204,7 +216,6 @@ def render_document_review(url, path, analysis, automator, idx, total):
             if path.endswith(".html"):
                 with open(path, "r", encoding="utf-8", errors="ignore") as f:
                     content = f.read()
-                    import streamlit.components.v1 as components
                     components.html(f"<div class='doc-viewer' style='height:600px; padding:15px; overflow-y:auto;'>{content}</div>", height=600, scrolling=True)
             elif path.endswith(".pdf"):
                 with open(path, "rb") as f:
@@ -239,7 +250,7 @@ def reset_state():
     st.session_state.current_analysis = None
     if st.session_state.current_temp_path and os.path.exists(st.session_state.current_temp_path):
         try: os.unlink(st.session_state.current_temp_path)
-        except: pass
+        except Exception: pass
     st.session_state.current_temp_path = None
 
 if st.session_state.running_state == "idle":
@@ -267,17 +278,7 @@ if st.session_state.running_state != "idle":
             reset_state()
             safe_rerun()
 
-    from automacao_mrosc import MROSCAutomator
-    nomes_estados = {
-        "AC": "Acre", "AL": "Alagoas", "AP": "Amapá", "AM": "Amazonas",
-        "BA": "Bahia", "CE": "Ceará", "DF": "Distrito Federal", "ES": "Espírito Santo",
-        "GO": "Goiás", "MA": "Maranhão", "MT": "Mato Grosso", "MS": "Mato Grosso do Sul",
-        "MG": "Minas Gerais", "PA": "Pará", "PB": "Paraíba", "PR": "Paraná",
-        "PE": "Pernambuco", "PI": "Piauí", "RJ": "Rio de Janeiro", "RN": "Rio Grande do Norte",
-        "RS": "Rio Grande do Sul", "RO": "Rondônia", "RR": "Roraima", "SC": "Santa Catarina",
-        "SP": "São Paulo", "SE": "Sergipe", "TO": "Tocantins"
-    }
-    nome_estado = nomes_estados.get(estado, estado)
+    nome_estado = NOMES_ESTADOS.get(estado, estado)
     
     st.markdown("---")
 
@@ -310,7 +311,7 @@ if st.session_state.running_state != "idle":
             ai_placeholder = st.empty()
 
         if not st.session_state.automator:
-            st.session_state.automator = MROSCAutomator(uf=estado, estado=nome_estado)
+            st.session_state.automator = MROSCAutomator(uf=estado, estado=nome_estado, limit=limite)
             
         def automator_callback(event):
             try:
@@ -333,7 +334,6 @@ if st.session_state.running_state != "idle":
                         if path.endswith(".html"):
                             with open(path, "r", encoding="utf-8", errors="ignore") as f:
                                 content = f.read()
-                                import streamlit.components.v1 as components
                                 with viewer_placeholder.container():
                                     components.html(f"<div style='border: 1px solid #e2e8f0; padding:15px; border-radius:8px; background: white; box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06); height: 500px; overflow-y: auto;'>{content}</div>", height=520, scrolling=False)
                         elif path.endswith(".pdf"):
@@ -368,18 +368,14 @@ if st.session_state.running_state != "idle":
                 if 'log_placeholder' in st.session_state and os.path.exists("logs/automacao.log"):
                     with open("logs/automacao.log", "r", encoding="utf-8") as f:
                         lines = f.readlines()[-30:]
-                        log_content = "".join(lines)
-                        # Syntax hl for logs
-                        formatted = log_content.replace("INFO", "<span class='info'>[INFO]</span>")\
-                                               .replace("ERROR", "<span class='error'>[ERROR]</span>")\
-                                               .replace("WARNING", "<span class='warning'>[WARNING]</span>")
+                        formatted = format_log_html(lines)
                         st.session_state.log_placeholder.markdown(
                             f"<div class='terminal-log'>{formatted}</div>", 
                             unsafe_allow_html=True
                         )
 
             except Exception as callback_err:
-                pass # Previne falhas de context no streamlit de travarem a automação
+                logger.debug(f"[UI_CALLBACK] Erro no callback do Streamlit (não-fatal): {callback_err}")
         
         st.markdown("---")
         st.markdown("### Diário de Execução (Tempo Real)")
@@ -388,10 +384,7 @@ if st.session_state.running_state != "idle":
         if os.path.exists("logs/automacao.log"):
             with open("logs/automacao.log", "r", encoding="utf-8") as f:
                 lines = f.readlines()[-30:]
-                log_content = "".join(lines)
-                formatted = log_content.replace("INFO", "<span class='info'>[INFO]</span>")\
-                                       .replace("ERROR", "<span class='error'>[ERROR]</span>")\
-                                       .replace("WARNING", "<span class='warning'>[WARNING]</span>")
+                formatted = format_log_html(lines)
                 st.session_state.log_placeholder.markdown(f"<div class='terminal-log'>{formatted}</div>", unsafe_allow_html=True)
         st.markdown("---")
 
@@ -418,7 +411,7 @@ if st.session_state.running_state != "idle":
 
     elif st.session_state.running_state == "running_manual":
         if not st.session_state.automator:
-            st.session_state.automator = MROSCAutomator(uf=estado, estado=nome_estado)
+            st.session_state.automator = MROSCAutomator(uf=estado, estado=nome_estado, limit=limite)
             with st.spinner("Realizando buscas na internet... (Aguarde)"):
                 st.session_state.links = st.session_state.automator.searcher.collect_links()
             st.session_state.manual_step = "next"
@@ -475,7 +468,7 @@ if st.session_state.running_state != "idle":
                     st.warning("Falha na extração de texto (arquivo vazio ou inválido).")
                     time.sleep(1)
                     try: temp_path.unlink()
-                    except: pass
+                    except Exception: pass
                     st.session_state.current_idx += 1
                     st.session_state.manual_step = "next"
                     safe_rerun()
@@ -502,13 +495,8 @@ if st.session_state.running_state == "idle":
     st.markdown("### Histórico de Execução (Logs)")
     if os.path.exists("logs/automacao.log"):
         with open("logs/automacao.log", "r", encoding="utf-8") as f:
-            # Pega as últimas 30 linhas
             lines = f.readlines()[-30:]
-            log_content = "".join(lines)
-            formatted = log_content.replace("INFO", "<span class='info'>[INFO]</span>")\
-                                   .replace("ERROR", "<span class='error'>[ERROR]</span>")\
-                                   .replace("WARNING", "<span class='warning'>[WARNING]</span>")
-            
+            formatted = format_log_html(lines)
             st.markdown(f"<div class='terminal-log'>{formatted}</div>", unsafe_allow_html=True)
         
         # Botão para limpar logs antigos

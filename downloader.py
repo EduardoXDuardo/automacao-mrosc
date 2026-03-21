@@ -27,6 +27,7 @@ class Downloader:
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
         url_hash = hashlib.md5(url.encode()).hexdigest()
         path = None
+        success = False
         
         try:
             try:
@@ -46,15 +47,15 @@ class Downloader:
                     for chunk in r.iter_content(chunk_size=Config.DOWNLOAD_CHUNK_SIZE):
                         if chunk:
                             f.write(chunk)
-                            
+            
+            success = True
             return path
-        except Exception as e:
-            if path is not None and path.exists():
+        finally:
+            if not success and path is not None and path.exists():
                 try:
                     path.unlink()
                 except Exception:
                     pass
-            raise e
 
     def download(self, url: str) -> Optional[Path]:
         try:

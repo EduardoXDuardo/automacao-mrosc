@@ -8,9 +8,10 @@ from config import Config, logger
 from queries import get_search_queries
 
 class Searcher:
-    def __init__(self, uf: str, estado: str):
+    def __init__(self, uf: str, estado: str, limit: int = 10):
         self.uf = uf
         self.estado = estado
+        self.limit = limit
 
     @retry(
         stop=stop_after_attempt(3),
@@ -20,7 +21,7 @@ class Searcher:
     )
     def _fetch_duckduckgo(self, query: str) -> List[dict]:
         with DDGS() as ddgs:
-            return list(ddgs.text(query, region='br-pt', max_results=10))
+            return list(ddgs.text(query, region='br-pt', max_results=self.limit))
 
     def collect_links(self) -> List[str]:
         found = []

@@ -50,6 +50,11 @@ class OutputManager:
                     "CÓDIGO DO DOCUMENTO": doc_id,
                     "TIPO": analysis.get("tipo", "N/A"),
                     "TITULO": analysis.get("titulo", "N/A"),
+                    "ANO": analysis.get("ano", "N/A"),
+                    "DIMENSÃO": analysis.get("dimensao", "N/A"),
+                    "INSTRUMENTO MROSC": analysis.get("instrumento_mrosc", "N/A"),
+                    "TEM FLUXO OPERACIONAL": analysis.get("tem_fluxo_operacional", False),
+                    "TEM INSTRUMENTOS GESTÃO": analysis.get("tem_instrumentos_gestao", False),
                     "LINK": url,
                     "CONSIDERAÇÃO": analysis.get("consideracao", ""),
                     "ARQUIVO LOCAL": f"archives/{final_filename}"

@@ -1,6 +1,5 @@
 import json
-import logging
-import re
+
 import time
 from pathlib import Path
 from typing import List, Dict, Optional
@@ -14,11 +13,17 @@ from prompts import get_analysis_prompt
 
 class AnalysisResult(BaseModel):
     relevante: bool = Field(description="Booleano que indica se o documento é relevante para o assunto MROSC.")
-    id_unico: str = Field(description="Um identificador curto e único para este documento baseado no título.")
+    id_unico: str = Field(description="Um identificador curto e único para este documento baseado no título (ex: dec-61981-sp).")
     nome_arquivo_sugerido: str = Field(description="Um nome de arquivo curto, em snake_case, sem extensão, representando o arquivo.")
-    tipo: str = Field(description="A categoria legal ou tipo do documento (ex: Edital, Portaria, Cartilha, etc).")
+    tipo: str = Field(description="A categoria legal ou tipo do documento (ex: Decreto, Lei, Portaria, Manual, Guia, etc).")
     titulo: str = Field(description="O título oficial ou manchete principal do documento.")
-    consideracao: str = Field(description="Uma breve justificativa da sua análise informando por que é ou não é relevante.")
+    consideracao: str = Field(description="Resumo técnico objetivo destacando o que o documento regula ou operacionaliza.")
+    ano: Optional[str] = Field(default=None, description="Ano do documento, se identificado.")
+    estado: Optional[str] = Field(default=None, description="Estado de origem do documento.")
+    dimensao: Optional[str] = Field(default=None, description="Dimensão analítica: Normativa, Operacional, Governança, Controle ou Capacitação.")
+    instrumento_mrosc: Optional[str] = Field(default=None, description="Instrumento MROSC: Regulamentação, Execução, Monitoramento, Prestação de contas, Chamamento público ou Outro.")
+    tem_fluxo_operacional: Optional[bool] = Field(default=None, description="Se o documento contém fluxo operacional.")
+    tem_instrumentos_gestao: Optional[bool] = Field(default=None, description="Se o documento contém instrumentos de gestão.")
 
 class DocumentProcessor:
     def __init__(self, api_key: str):
@@ -40,7 +45,7 @@ class DocumentProcessor:
                     self.client.files.delete(name=f_name)
                     logger.info(f"🗑️ Arquivo órfão limpo internamente no Gemini: {f_name}")
                 except Exception:
-                    pass
+                    pass  # Ignora erros de limpeza de arquivos órfãos
         except Exception as e:
             logger.warning(f"⚠️ Não foi possível limpar os arquivos antigos. {e}")
 
@@ -60,6 +65,7 @@ class DocumentProcessor:
                 
                 if "FAILED" in str(uploaded_file.state).upper():
                     logger.error(f"❌ O Gemini reportou erro interno ao tentar ler o PDF: {path.name}")
+                    return []
                 else:
                     parts.append(uploaded_file)
 
@@ -90,10 +96,7 @@ class DocumentProcessor:
                 )
             )
             
-            raw_text = response.text.strip()
-            raw_text = re.sub(r'```json\n?|```', '', raw_text)
-            
-            data = json.loads(raw_text)
+            data = json.loads(response.text.strip())
             return data
 
         except Exception as e:
@@ -106,5 +109,5 @@ class DocumentProcessor:
                     try:
                         self.client.files.delete(name=part.name)
                         logger.info(f"🗑️ Arquivo {part.name} limpo do servidor do Gemini.")
-                    except:
+                    except Exception:
                         pass

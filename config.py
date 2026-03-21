@@ -43,7 +43,13 @@ class Config:
     @classmethod
     def get_api_key(cls):
         load_dotenv(override=True)
-        return os.getenv("GEMINI_API_KEY")
+        key = os.getenv("GEMINI_API_KEY")
+        if not key:
+            raise ValueError(
+                "GEMINI_API_KEY não configurada. "
+                "Crie um arquivo .env com: GEMINI_API_KEY=sua_chave_aqui"
+            )
+        return key
 
     MODEL_ID = "gemini-3.1-flash-lite-preview" 
 
@@ -54,5 +60,5 @@ class Config:
     MAX_HTML_CHARS = 100000 # Limite de caracteres para HTML
 
     # --- Configurações de Processamento ---
-    BLACKLIST = ['edital', 'chamamento', 'esporte', 'futebol', 'concurso', 'vaga', 'noticia']
+    BLACKLIST = ['esporte', 'futebol', 'concurso', 'vaga', 'noticia']
 

@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-import os
-import sys
 import time
 import argparse
 from datetime import datetime
@@ -15,16 +13,13 @@ from downloader import Downloader
 from output_manager import OutputManager
 
 class MROSCAutomator:
-    def __init__(self, uf: str, estado: str):
+    def __init__(self, uf: str, estado: str, limit: int = 10):
         self.uf = uf.upper()
         self.estado = estado
         
-        try:
-            self.processor = DocumentProcessor(Config.get_api_key())
-        except ValueError:
-            sys.exit(1)
+        self.processor = DocumentProcessor(Config.get_api_key())
             
-        self.searcher = Searcher(self.uf, self.estado)
+        self.searcher = Searcher(self.uf, self.estado, limit=limit)
         self.timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         
         self.output_manager = OutputManager(self.uf, self.estado, self.timestamp)
@@ -51,7 +46,7 @@ class MROSCAutomator:
                 if ui_callback: ui_callback({"type": "error", "message": "Nenhum conteúdo extraído.", "url": url})
                 return
             
-            logger.info(f"[AI_ANALYSIS] Disparando requisição Gemini 1.5 - {url}")
+            logger.info(f"[AI_ANALYSIS] Disparando requisição {Config.MODEL_ID} - {url}")
             if ui_callback: ui_callback({"type": "analyzing", "url": url})
             analysis = self.processor.analyze(parts, url, self.estado)
             
@@ -76,7 +71,7 @@ class MROSCAutomator:
             if temp_path.exists(): 
                 try:
                     temp_path.unlink()
-                except:
+                except Exception:
                     pass
 
     def run(self, ui_callback: Optional[callable] = None, max_workers: int = 3):
@@ -110,7 +105,7 @@ class MROSCAutomator:
                     except Exception as e:
                         logger.error(f"[THREAD_ERROR] Problema catastrófico em worker: {e}")
 
-        logger.info("[FINISH] Pipiline base concluído. Encerrando conexões IO.")
+        logger.info("[FINISH] Pipeline base concluído. Encerrando conexões IO.")
         self.output_manager.save_excel(incremental=False)
         if ui_callback: ui_callback({"type": "done", "results_count": len(self.output_manager.results), "excel": str(self.output_manager.base_dir / "dados-compilados.xlsx")})
 
