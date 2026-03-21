@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+import time
 from pathlib import Path
 from typing import List, Dict, Optional
 from bs4 import BeautifulSoup
@@ -33,7 +34,18 @@ class DocumentProcessor:
             if path.suffix == ".pdf":
                 logger.info(f"📂 Fazendo upload nativo do PDF inteiro para API do Gemini: {path.name}")
                 uploaded_file = self.client.files.upload(file=str(path))
-                parts.append(uploaded_file)
+                
+                # Aguardar o processamento do arquivo no servidor do Google (necessário para PDFs longos)
+                while str(uploaded_file.state).upper().endswith("PROCESSING"):
+                    logger.info(f"⏳ O Gemini está lendo e indexando o PDF {path.name}... (Aguarde)")
+                    time.sleep(2)
+                    uploaded_file = self.client.files.get(name=uploaded_file.name)
+                
+                if "FAILED" in str(uploaded_file.state).upper():
+                    logger.error(f"❌ O Gemini reportou erro interno ao tentar ler o PDF: {path.name}")
+                else:
+                    parts.append(uploaded_file)
+
             else:
                 with open(path, 'r', encoding='utf-8', errors='ignore') as f:
                     soup = BeautifulSoup(f.read(), 'html.parser')

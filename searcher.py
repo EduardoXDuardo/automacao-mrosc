@@ -1,5 +1,6 @@
 import logging
 from typing import List
+import time
 from ddgs import DDGS
 from tenacity import retry, stop_after_attempt, wait_exponential, before_sleep_log
 
@@ -33,6 +34,8 @@ class Searcher:
                 for r in res:
                     if not any(b in r['href'].lower() for b in Config.BLACKLIST):
                         found.append(r['href'])
+                # Previne banimento rápido adicionando respiro entre pesquisas consecutivas
+                time.sleep(1.5)
             except Exception as e:
                 logger.error(f"⚠️ Erro persistente na busca DuckDuckGo ('{q}'): {e}")
         

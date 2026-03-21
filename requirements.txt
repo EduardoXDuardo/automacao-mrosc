@@ -1,12 +1,10 @@
 requests
 pandas
 openpyxl
-pdfplumber
 beautifulsoup4
 python-dotenv
 google-genai
 ddgs
-pdf2image
 streamlit
 pydantic
 tenacity

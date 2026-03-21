@@ -31,7 +31,4 @@ class Config:
     
     # --- Configurações de Processamento ---
     BLACKLIST = ['edital', 'chamamento', 'esporte', 'futebol', 'concurso', 'vaga', 'noticia']
-    PDF_PAGES_TO_EXTRACT = 5
-    OCR_PAGES_TO_EXTRACT = 3
-    MAX_HTML_CHARS = 15000
-    DOWNLOAD_CHUNK_SIZE = 8192
+
