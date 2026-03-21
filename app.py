@@ -72,9 +72,8 @@ st.markdown("""
         background-color: #f8fafc;
         border-right: 1px solid #e2e8f0;
     }
-    [data-testid="stSidebar"] .css-17lntkn {
+    [data-testid="stSidebar"] * {
         color: #0f172a;
-        font-weight: 600;
     }
 
     div.stMetric {
