@@ -1,5 +1,6 @@
 import logging
 from typing import List
+from urllib.parse import urlparse, urlunparse
 import time
 from ddgs import DDGS
 from tenacity import retry, stop_after_attempt, wait_exponential, before_sleep_log
@@ -11,7 +12,7 @@ class Searcher:
     def __init__(self, uf: str, estado: str, limit: int = 10):
         self.uf = uf
         self.estado = estado
-        self.limit = limit
+        self.limit = max(1, limit)
 
     @retry(
         stop=stop_after_attempt(3),
@@ -23,6 +24,27 @@ class Searcher:
         with DDGS() as ddgs:
             return list(ddgs.text(query, region='br-pt', max_results=self.limit))
 
+    @staticmethod
+    def _normalize_url(url: str) -> str:
+        """Normaliza URL para deduplicação mais eficaz."""
+        parsed = urlparse(url)
+        # Remove fragmento e trailing slash do path
+        normalized_path = parsed.path.rstrip('/')
+        return urlunparse((
+            parsed.scheme,
+            parsed.netloc.lower(),
+            normalized_path,
+            parsed.params,
+            parsed.query,
+            ''  # remove fragment
+        ))
+
+    @staticmethod
+    def _is_blacklisted(url: str) -> bool:
+        """Verifica blacklist apenas no path da URL, não nos query params."""
+        path = urlparse(url).path.lower()
+        return any(term in path for term in Config.BLACKLIST)
+
     def collect_links(self) -> List[str]:
         found = []
         queries = get_search_queries(self.uf, self.estado)
@@ -33,12 +55,14 @@ class Searcher:
             try:
                 res = self._fetch_duckduckgo(q)
                 for r in res:
-                    if not any(b in r['href'].lower() for b in Config.BLACKLIST):
-                        found.append(r['href'])
+                    href = r.get('href', '')
+                    if href and not self._is_blacklisted(href):
+                        found.append(self._normalize_url(href))
                 time.sleep(1.5)
             except Exception as e:
                 logger.error(f"[SEARCH_ERROR] Falha persistente na query ('{q}'): {e}")
         
-        filtered = list(set(found))
+        # Deduplica preservando ordem de inserção
+        filtered = list(dict.fromkeys(found))
         logger.info(f"[SEARCH] Varredura concluída. Links brutos consolidados: {len(filtered)}")
         return filtered

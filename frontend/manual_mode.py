@@ -114,7 +114,7 @@ def _process_document(automator, url):
 def _process_manual_action(action, url, path, analysis, automator):
     """Processa a ação do usuário (aprovar ou pular)."""
     if action == "approve":
-        automator.process_and_save_document(url, Path(path), analysis)
+        automator.output_manager.process_and_save_document(url, Path(path), analysis)
         st.toast("✅ Documento aprovado e salvo!")
     elif action == "skip":
         st.toast("⏭️ Documento descartado.")

@@ -17,6 +17,9 @@ class MROSCAutomator:
         self.uf = uf.upper()
         self.estado = estado
         
+        if limit < 1:
+            raise ValueError("O parâmetro 'limit' deve ser >= 1")
+        
         self.processor = DocumentProcessor(Config.get_api_key())
             
         self.searcher = Searcher(self.uf, self.estado, limit=limit)
@@ -24,9 +27,6 @@ class MROSCAutomator:
         
         self.output_manager = OutputManager(self.uf, self.estado, self.timestamp)
         self.downloader = Downloader(self.output_manager.base_dir)
-
-    def process_and_save_document(self, url: str, temp_path: Path, analysis: dict) -> bool:
-        return self.output_manager.process_and_save_document(url, temp_path, analysis)
 
     def _process_single_link(self, idx: int, total_links: int, url: str, ui_callback: Optional[callable] = None):
         logger.info(f"--- [ {idx:02d} / {total_links:02d} ] ---")
@@ -53,7 +53,7 @@ class MROSCAutomator:
             if ui_callback: ui_callback({"type": "analysis_done", "url": url, "analysis": analysis})
             
             if isinstance(analysis, dict) and analysis.get("relevante"):
-                salvo = self.process_and_save_document(url, temp_path, analysis)
+                salvo = self.output_manager.process_and_save_document(url, temp_path, analysis)
                 if salvo:
                     if ui_callback: 
                         final_path = self.output_manager.archives_dir / Path(self.output_manager.results[-1]["ARQUIVO LOCAL"]).name
@@ -74,7 +74,13 @@ class MROSCAutomator:
                 except Exception:
                     pass
 
-    def run(self, ui_callback: Optional[callable] = None, max_workers: int = 3):
+    def run(self, ui_callback: Optional[callable] = None, max_workers: Optional[int] = None):
+        if max_workers is None:
+            max_workers = Config.MAX_THREADS
+
+        # Limpar arquivos órfãos do Gemini antes de iniciar
+        self.processor.cleanup_all_files()
+
         logger.info(f"[START] Automação MROSC inicializada | Job Dir: {self.output_manager.base_dir}")
         
         is_ui_mode = ui_callback is not None
