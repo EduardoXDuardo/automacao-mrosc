@@ -28,7 +28,9 @@ class Config:
     # --- Configurações de Execução ---
     MAX_THREADS = 3 # Reservado para uso futuro
     TIMEOUT = 30 # Segundos de espera em requisições
-    
+    DOWNLOAD_CHUNK_SIZE = 8192 # Tamanho do chunk para downloads
+    MAX_HTML_CHARS = 100000 # Limite de caracteres para HTML
+
     # --- Configurações de Processamento ---
     BLACKLIST = ['edital', 'chamamento', 'esporte', 'futebol', 'concurso', 'vaga', 'noticia']
 
