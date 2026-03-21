@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Optional
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type, before_sleep_log
 
-from config import Config, logger
+from backend.config import Config, logger
 
 urllib3.disable_warnings(InsecureRequestWarning)
 

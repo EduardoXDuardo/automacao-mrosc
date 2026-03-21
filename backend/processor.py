@@ -1,5 +1,4 @@
 import json
-
 import time
 from pathlib import Path
 from typing import List, Dict, Optional
@@ -8,8 +7,8 @@ from google import genai
 from google.genai import types
 from pydantic import BaseModel, Field
 
-from config import Config, logger
-from prompts import get_analysis_prompt
+from backend.config import Config, logger
+from backend.prompts import get_analysis_prompt
 
 class AnalysisResult(BaseModel):
     relevante: bool = Field(description="Booleano que indica se o documento é relevante para o assunto MROSC.")

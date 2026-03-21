@@ -6,11 +6,11 @@ from pathlib import Path
 from typing import Optional
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from config import Config, logger
-from processor import DocumentProcessor
-from searcher import Searcher
-from downloader import Downloader
-from output_manager import OutputManager
+from backend.config import Config, logger
+from backend.processor import DocumentProcessor
+from backend.searcher import Searcher
+from backend.downloader import Downloader
+from backend.output_manager import OutputManager
 
 class MROSCAutomator:
     def __init__(self, uf: str, estado: str, limit: int = 10):

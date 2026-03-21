@@ -4,8 +4,8 @@ import time
 from ddgs import DDGS
 from tenacity import retry, stop_after_attempt, wait_exponential, before_sleep_log
 
-from config import Config, logger
-from queries import get_search_queries
+from backend.config import Config, logger
+from backend.queries import get_search_queries
 
 class Searcher:
     def __init__(self, uf: str, estado: str, limit: int = 10):

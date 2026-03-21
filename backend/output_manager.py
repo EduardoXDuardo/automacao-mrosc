@@ -4,7 +4,7 @@ import re
 import pandas as pd
 import threading
 from pathlib import Path
-from config import logger
+from backend.config import logger
 
 class OutputManager:
     def __init__(self, uf: str, estado: str, timestamp: str):

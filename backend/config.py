@@ -61,4 +61,3 @@ class Config:
 
     # --- Configurações de Processamento ---
     BLACKLIST = ['esporte', 'futebol', 'concurso', 'vaga', 'noticia']
-
