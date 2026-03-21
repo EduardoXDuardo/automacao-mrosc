@@ -16,12 +16,6 @@ from searcher import Searcher
 from downloader import Downloader
 from output_manager import OutputManager
 
-try:
-    from streamlit.runtime.scriptrunner import add_script_run_ctx, get_script_run_ctx
-except ImportError:
-    add_script_run_ctx = None
-    get_script_run_ctx = None
-
 class MROSCAutomator:
     def __init__(self, uf: str, estado: str):
         self.uf = uf.upper()
@@ -41,11 +35,7 @@ class MROSCAutomator:
     def process_and_save_document(self, url: str, temp_path: Path, analysis: dict) -> bool:
         return self.output_manager.process_and_save_document(url, temp_path, analysis)
 
-    def _process_single_link(self, idx: int, total_links: int, url: str, ui_callback: Optional[callable] = None, ctx = None):
-        if add_script_run_ctx and ctx:
-            import threading
-            add_script_run_ctx(threading.current_thread(), ctx)
-
+    def _process_single_link(self, idx: int, total_links: int, url: str, ui_callback: Optional[callable] = None):
         logger.info(f"")
         logger.info(f"--- [ {idx} / {total_links} ] ---")
         logger.info(f"🔍 Baixando e extraindo: {url}")
@@ -102,28 +92,13 @@ class MROSCAutomator:
         logger.info(f"🎯 Total de links filtrados a serem analisados: {total_links}")
         if ui_callback: ui_callback({"type": "links_found", "total": total_links, "links": links})
         
-        # Uso do Pool de Threads baseado no config para Paralelismo
-        max_workers = getattr(Config, 'MAX_THREADS', 3)
-        logger.info(f"⚡ Iniciando processamento em lotes com {max_workers} threads...")
-        
-        ctx = get_script_run_ctx() if get_script_run_ctx else None
-
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = []
-            for idx, url in enumerate(links, 1):
-                future = executor.submit(self._process_single_link, idx, total_links, url, ui_callback, ctx)
-                futures.append(future)
-                
-            for future in as_completed(futures):
-                try:
-                    future.result()
-                except Exception as e:
-                    logger.error(f"Erro na thread: {e}")
+        for idx, url in enumerate(links, 1):
+            self._process_single_link(idx, total_links, url, ui_callback)
+            time.sleep(1)
 
         logger.info(f"")
         self.output_manager.save_excel(incremental=False)
         if ui_callback: ui_callback({"type": "done", "results_count": len(self.output_manager.results), "excel": str(self.output_manager.base_dir / "dados-compilados.xlsx")})
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

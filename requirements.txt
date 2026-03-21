@@ -9,3 +9,4 @@ ddgs
 pdf2image
 streamlit
 pydantic
+tenacity
