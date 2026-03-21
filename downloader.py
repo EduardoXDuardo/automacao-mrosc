@@ -15,26 +15,36 @@ class Downloader:
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=10),
-        retry=retry_if_exception_type(requests.exceptions.RequestException),
+        retry=retry_if_exception_type(Exception),
         before_sleep=before_sleep_log(logger, logging.WARNING),
         reraise=True
     )
     def _execute_download(self, url: str) -> Path:
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
         url_hash = hashlib.md5(url.encode()).hexdigest()
+        path = None
         
-        with self.session.get(url, timeout=Config.TIMEOUT, verify=False, headers=headers, stream=True) as r:
-            r.raise_for_status()
-            ct = r.headers.get('Content-Type', '').lower()
-            ext = ".pdf" if "pdf" in ct or url.lower().endswith('.pdf') else ".html"
-            
-            path = self.base_dir / f"temp_{url_hash}{ext}"
-            
-            with open(path, 'wb') as f:
-                for chunk in r.iter_content(chunk_size=Config.DOWNLOAD_CHUNK_SIZE):
-                    f.write(chunk)
-                    
-        return path
+        try:
+            with self.session.get(url, timeout=Config.TIMEOUT, verify=False, headers=headers, stream=True) as r:
+                r.raise_for_status()
+                ct = r.headers.get('Content-Type', '').lower()
+                ext = ".pdf" if "pdf" in ct or url.lower().endswith('.pdf') else ".html"
+                
+                path = self.base_dir / f"temp_{url_hash}{ext}"
+                
+                with open(path, 'wb') as f:
+                    for chunk in r.iter_content(chunk_size=Config.DOWNLOAD_CHUNK_SIZE):
+                        if chunk:
+                            f.write(chunk)
+                            
+            return path
+        except Exception as e:
+            if path is not None and path.exists():
+                try:
+                    path.unlink()
+                except Exception:
+                    pass
+            raise e
 
     def download(self, url: str) -> Optional[Path]:
         try:
