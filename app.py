@@ -11,49 +11,99 @@ st.set_page_config(page_title="Automação MROSC", layout="wide")
 # --- CUSTOM CSS ---
 st.markdown("""
 <style>
-    .main-title {
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif;
+    }
+
+    .header-container {
+        padding: 30px 0 20px 0;
         text-align: center;
-        color: #1a365d;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        font-weight: 800;
-        margin-bottom: 0px;
-        padding-bottom: 5px;
-        letter-spacing: -0.5px;
+        background: linear-gradient(135deg, #f6f8fd 0%, #f1f5f9 100%);
+        border-radius: 12px;
+        margin-bottom: 40px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    }
+    .main-title {
+        color: #0f172a;
+        font-weight: 700;
+        font-size: 2.8em;
+        margin: 0;
+        letter-spacing: -1px;
     }
     .sub-title {
-        text-align: center;
-        color: #4a5568;
-        font-size: 1.1em;
-        margin-top: 0px;
-        margin-bottom: 30px;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        color: #475569;
+        font-size: 1.25em;
+        font-weight: 400;
+        margin-top: 8px;
+        margin-bottom: 0;
     }
+
     .stButton>button {
-        border-radius: 6px;
+        border-radius: 8px;
         font-weight: 600;
-        transition: all 0.2s ease-in-out;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+        padding: 10px 24px;
+        transition: all 0.2s ease;
     }
-    .stButton>button:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.06);
+    .stButton>button[kind="primary"] {
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        border: none;
+        box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
     }
-    div[data-testid="stSidebar"] {
-        background-color: #f7fafc;
+    .stButton>button[kind="primary"]:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 8px -1px rgba(37, 99, 235, 0.3);
+    }
+    
+    [data-testid="stSidebar"] {
+        background-color: #f8fafc;
         border-right: 1px solid #e2e8f0;
     }
-    .status-card {
-        background-color: #ffffff;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        border: 1px solid #e2e8f0;
-        margin-bottom: 20px;
+    [data-testid="stSidebar"] .css-17lntkn {
+        color: #0f172a;
+        font-weight: 600;
     }
-    .metric-value {
-        font-size: 1.8em;
-        font-weight: bold;
-        color: #2b6cb0;
+
+    div.stMetric {
+        background-color: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 15px 20px;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    }
+    div[data-testid="stMetricValue"] {
+        color: #2563eb;
+        font-weight: 700;
+        font-size: 2rem;
+    }
+    
+    .terminal-log {
+        background-color: #0f172a;
+        color: #10b981;
+        padding: 20px;
+        border-radius: 10px;
+        font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+        font-size: 0.9em;
+        height: 350px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.2);
+        border: 1px solid #1e293b;
+        line-height: 1.5;
+    }
+    .terminal-log span.error { color: #ef4444; }
+    .terminal-log span.info { color: #3b82f6; }
+    .terminal-log span.warning { color: #f59e0b; }
+    
+    .doc-viewer {
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 0;
+        background: #f8fafc;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        overflow: hidden;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -79,11 +129,16 @@ if "dialog_open" not in st.session_state:
 if "dialog_action" not in st.session_state:
     st.session_state.dialog_action = None
 
-st.markdown('<div class="main-title" style="font-size: 2.2em;">Automação MROSC</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Coleta e Classificação de Documentos Jurídicos com IA</div>', unsafe_allow_html=True)
+st.markdown('''
+<div class="header-container">
+    <div class="main-title">Automação MROSC</div>
+    <div class="sub-title">Inteligência Artificial Direcionada a Documentos e Parcerias Públicas</div>
+</div>
+''', unsafe_allow_html=True)
 
-st.sidebar.header("⚙️ Configurações da Busca")
-st.sidebar.markdown("---")
+st.sidebar.image("https://cdn-icons-png.flaticon.com/512/3214/3214746.png", width=60)
+st.sidebar.markdown("### ⚙️ Painel de Controle")
+st.sidebar.markdown("Configure os filtros abaixo:")
 estado = st.sidebar.selectbox("Estado alvo (UF)", [
     "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", 
     "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", 
@@ -103,9 +158,9 @@ def safe_rerun():
 def process_manual_action(action, url, path, analysis, automator):
     if action == "approve":
         automator.process_and_save_document(url, Path(path), analysis)
-        st.toast("Documento aprovado e salvo!", icon="✅")
+        st.toast("Documento aprovado e salvo!")
     elif action == "skip":
-        st.toast("Documento pulado.", icon="⏭️")
+        st.toast("Documento pulado.")
         
     if path and os.path.exists(path):
         try: os.unlink(path)
@@ -116,52 +171,52 @@ def process_manual_action(action, url, path, analysis, automator):
     safe_rerun()
 
 def render_document_review(url, path, analysis, automator, idx, total):
-    st.markdown(f"### Revisando Documento {idx + 1} de {total}")
-    st.markdown(f"**🔗 Fonte:** [{url}]({url})")
+    st.markdown(f"### 📄 Analisando Documento {idx + 1} de {total}")
+    st.markdown(f"**Fonte Original:** [{url}]({url})")
     
     act1, act2 = st.columns(2)
     with act1:
-        if st.button("✅ Aprovar", use_container_width=True, type="primary", key=f"btn_approve_{idx}"):
+        if st.button("✅ Aprovar & Salvar", use_container_width=True, type="primary", key=f"btn_approve_{idx}"):
             process_manual_action("approve", url, path, analysis, automator)
     with act2:
-        if st.button("⏭️ Pular", use_container_width=True, key=f"btn_skip_{idx}"):
+        if st.button("⏭️ Pular/Descartar", use_container_width=True, key=f"btn_skip_{idx}"):
             process_manual_action("skip", url, path, analysis, automator)
 
     st.markdown("---")
     
     # --- VISUALIZADORES ---
-    c_doc, c_ia = st.columns([1.2, 1])
+    c_doc, c_ia = st.columns([1.4, 1])
     with c_doc:
-        st.markdown("**Documento Original**")
+        st.markdown("#### Visualização do Documento")
         try:
             if path.endswith(".html"):
                 with open(path, "r", encoding="utf-8", errors="ignore") as f:
                     content = f.read()
                     import streamlit.components.v1 as components
-                    components.html(f"<div style='border: 1px solid #ccc; padding:10px; border-radius:5px; background: white;'>{content}</div>", height=600, scrolling=True)
+                    components.html(f"<div class='doc-viewer' style='height:600px; padding:15px; overflow-y:auto;'>{content}</div>", height=600, scrolling=True)
             elif path.endswith(".pdf"):
                 with open(path, "rb") as f:
                     base64_pdf = base64.b64encode(f.read()).decode('utf-8')
-                pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="600" type="application/pdf" style="border: 1px solid #ccc; border-radius:5px;"></iframe>'
+                pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="600" type="application/pdf" class="doc-viewer"></iframe>'
                 st.markdown(pdf_display, unsafe_allow_html=True)
             else:
-                st.warning(f"Arquivo não renderizável (formato desconhecido).")
+                st.info(f"O arquivo `{path}` foi baixado com sucesso, mas este formato não é renderizado diretamente.")
         except Exception as e:
             st.error(f"Erro ao carregar visualização: {e}")
 
     with c_ia:
-        st.markdown("**Análise da IA**")
+        st.markdown("#### 🤖 Análise da Inteligência Artificial")
         
         with st.container(height=600):
             if isinstance(analysis, dict):
                 if analysis.get("relevante"):
-                    st.success("**Sugestão: RELEVANTE**")
+                    st.success("✅ **Recomendação: RELEVANTE**")
                 else:
-                    st.error("**Sugestão: NÃO Relevante**")
+                    st.error("❌ **Recomendação: NÃO RELEVANTE**")
                 
                 st.json(analysis, expanded=True)
             else:
-                st.error("Falha na análise ou não obteve JSON válido.")
+                st.error("Falha na análise ou não obteve JSON válido da IA.")
 
 def reset_state():
     st.session_state.running_state = "idle"
@@ -176,19 +231,22 @@ def reset_state():
     st.session_state.current_temp_path = None
 
 if st.session_state.running_state == "idle":
-    st.info("Configure os parâmetros na barra lateral e inicie o processo para encontrar documentos referentes ao MROSC no estado selecionado.")
+    st.info("ℹ️ **Bem-vindo ao Automação MROSC.**\n\nEste sistema utiliza IA para buscar e classificar editais, parcerias, pautas, relatórios e manuais do MROSC na página dos estados listados. Configure os parâmetros na aba lateral esquerda e clique em **Iniciar Automação** para começar.")
+    st.markdown("<br>", unsafe_allow_html=True)
+    
     col_btn, _ = st.columns([1, 2])
     with col_btn:
-        if st.button("Iniciar Automação", use_container_width=True, type="primary"):
+        if st.button("🚀 Iniciar Automação", use_container_width=True, type="primary"):
             st.session_state.modo_manual = modo_manual
             st.session_state.running_state = "running_manual" if modo_manual else "running_auto"
             safe_rerun()
 
 # ----------------- EXECUÇÃO AUTOMÁTICA OU MANUAL ----------------- #
 if st.session_state.running_state != "idle":
-    col1, col2 = st.columns([4, 1])
-    with col2:
-        if st.button("⏹️ Parar", use_container_width=True):
+    st.markdown("---")
+    col1, col_stop = st.columns([4, 1])
+    with col_stop:
+        if st.button("🛑 Parar Execução", use_container_width=True, type="secondary"):
             reset_state()
             safe_rerun()
 
@@ -208,7 +266,8 @@ if st.session_state.running_state != "idle":
 
     # MODO AUTOMÁTICO (COMO ERA ANTES)
     if st.session_state.running_state == "running_auto":
-        st.markdown('<h3>⚡ Execução Automática em Andamento</h3>', unsafe_allow_html=True)
+        st.markdown("---")
+        st.markdown('<h3>Execução Automática em Andamento</h3>', unsafe_allow_html=True)
         
         # Area for metrics
         m1, m2, m3 = st.columns(3)
@@ -227,10 +286,10 @@ if st.session_state.running_state != "idle":
         
         col1, col2 = st.columns(2)
         with col1:
-            st.markdown("#### 📄 Último Arquivo Processado")
+            st.markdown("#### Último Arquivo Processado")
             viewer_placeholder = st.empty()
         with col2:
-            st.markdown("#### 🧠 Última Análise da IA")
+            st.markdown("#### Última Análise da IA")
             ai_placeholder = st.empty()
 
         if not st.session_state.automator:
@@ -239,17 +298,17 @@ if st.session_state.running_state != "idle":
         def automator_callback(event):
             try:
                 if event["type"] == "status":
-                    status_text.info(f"🔄 **Status:** {event['message']}")
+                    status_text.info(f"**Status:** {event['message']}")
                 elif event["type"] == "links_found":
                     metric_total.metric("Links Encontrados", event['total'])
-                    status_text.success(f"🔍 Busca finalizada. {event['total']} links encontrados na web.")
+                    status_text.success(f"Busca finalizada. {event['total']} links encontrados na web.")
                 elif event["type"] == "downloading":
                     pct = event["current"] / event["total"]
                     progress_bar.progress(pct)
                     metric_current.metric("Processando Agora", f"{event['current']} / {event['total']}")
-                    status_text.warning(f"⏳ **Baixando:** {event['url']}")
-                    ai_placeholder.info("⏳ Aguardando processamento da IA...")
-                    viewer_placeholder.info("📥 Baixando arquivo...")
+                    status_text.warning(f"**Baixando:** {event['url']}")
+                    ai_placeholder.info("Aguardando processamento da IA...")
+                    viewer_placeholder.info("Baixando arquivo...")
                 elif event["type"] == "downloaded":
                     path = event["path"]
                     try:
@@ -275,31 +334,30 @@ if st.session_state.running_state != "idle":
                     with ai_placeholder.container():
                         if isinstance(analysis, dict):
                             if analysis.get("relevante"):
-                                st.success(f"✅ **Relevante:** {analysis.get('titulo', 'Documento sem título')}")
+                                st.success(f"**Relevante:** {analysis.get('titulo', 'Documento sem título')}")
                             else:
-                                st.error("❌ **Não Relevante:** Arquivo descartado.")
+                                st.error("**Não Relevante:** Arquivo descartado.")
                             
                             st.json(analysis, expanded=True)
                         else:
-                            st.warning("⚠️ Falha na análise ou retorno inesperado.")
+                            st.warning("Falha na análise ou retorno inesperado.")
                 elif event["type"] == "saved":
                     saved_count = len(st.session_state.automator.output_manager.results)
                     metric_saved.metric("Documentos Salvos", f"{saved_count}")
                 elif event["type"] == "done":
                     progress_bar.progress(1.0)
-                    status_text.success(f"🎉 **Finalizado!** {event['results_count']} documentos relevantes salvos com sucesso.")
-                    st.balloons()
+                    status_text.success(f"**Finalizado!** {event['results_count']} documentos relevantes salvos com sucesso.")
                 
                 if 'log_placeholder' in st.session_state and os.path.exists("logs/automacao.log"):
                     with open("logs/automacao.log", "r", encoding="utf-8") as f:
                         lines = f.readlines()[-30:]
                         log_content = "".join(lines)
+                        # Syntax hl for logs
+                        formatted = log_content.replace("INFO", "<span class='info'>[INFO]</span>")\
+                                               .replace("ERROR", "<span class='error'>[ERROR]</span>")\
+                                               .replace("WARNING", "<span class='warning'>[WARNING]</span>")
                         st.session_state.log_placeholder.markdown(
-                            f"""
-                            <div style="background-color: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 8px; font-family: 'Courier New', Courier, monospace; font-size: 0.9em; height: 300px; overflow-y: scroll; white-space: pre-wrap; margin-bottom: 20px;">
-{log_content}
-                            </div>
-                            """, 
+                            f"<div class='terminal-log'>{formatted}</div>", 
                             unsafe_allow_html=True
                         )
 
@@ -307,14 +365,18 @@ if st.session_state.running_state != "idle":
                 pass # Previne falhas de context no streamlit de travarem a automação
         
         st.markdown("---")
-        st.markdown("### 📋 Diário de Execução (Tempo Real)")
+        st.markdown("### Diário de Execução (Tempo Real)")
         st.session_state.log_placeholder = st.empty()
         
         if os.path.exists("logs/automacao.log"):
             with open("logs/automacao.log", "r", encoding="utf-8") as f:
                 lines = f.readlines()[-30:]
                 log_content = "".join(lines)
-                st.session_state.log_placeholder.markdown(f'<div style="background-color: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 8px; font-family: \'Courier New\', Courier, monospace; font-size: 0.9em; height: 300px; overflow-y: scroll; white-space: pre-wrap; margin-bottom: 20px;">{log_content}</div>', unsafe_allow_html=True)
+                formatted = log_content.replace("INFO", "<span class='info'>[INFO]</span>")\
+                                       .replace("ERROR", "<span class='error'>[ERROR]</span>")\
+                                       .replace("WARNING", "<span class='warning'>[WARNING]</span>")
+                st.session_state.log_placeholder.markdown(f"<div class='terminal-log'>{formatted}</div>", unsafe_allow_html=True)
+        st.markdown("---")
 
         st.session_state.automator.run(ui_callback=automator_callback)
         st.success("Automação em Lote concluída.")
@@ -327,13 +389,13 @@ if st.session_state.running_state != "idle":
             
             with open(zip_path, "rb") as f:
                 st.download_button(
-                    label="📥 Baixar Resultados (.zip)",
+                    label="Baixar Resultados (.zip)",
                     data=f,
                     file_name=os.path.basename(zip_path),
                     mime="application/zip"
                 )
 
-        if st.button("Finalizar e Voltar", key="btn_finalizar"):
+        if st.button("🏁 Finalizar e Voltar", key="btn_finalizar", type="primary"):
             reset_state()
             safe_rerun()
 
@@ -366,7 +428,7 @@ if st.session_state.running_state != "idle":
                         file_name=os.path.basename(zip_path),
                         mime="application/zip"
                     )
-            if st.button("Concluir Processo"):
+            if st.button("🏁 Concluir Processo", type="primary"):
                 reset_state()
                 safe_rerun()
             st.stop()
@@ -420,24 +482,20 @@ if st.session_state.running_state != "idle":
 # Visualizador de Logs 
 if st.session_state.running_state == "idle":
     st.markdown("---")
-    st.markdown("### 📋 Histórico de Execução (Logs)")
+    st.markdown("### Histórico de Execução (Logs)")
     if os.path.exists("logs/automacao.log"):
         with open("logs/automacao.log", "r", encoding="utf-8") as f:
             # Pega as últimas 30 linhas
             lines = f.readlines()[-30:]
             log_content = "".join(lines)
+            formatted = log_content.replace("INFO", "<span class='info'>[INFO]</span>")\
+                                   .replace("ERROR", "<span class='error'>[ERROR]</span>")\
+                                   .replace("WARNING", "<span class='warning'>[WARNING]</span>")
             
-            st.markdown(
-                f"""
-                <div style="background-color: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 8px; font-family: 'Courier New', Courier, monospace; font-size: 0.9em; height: 300px; overflow-y: scroll; white-space: pre-wrap; margin-bottom: 20px;">
-{log_content}
-                </div>
-                """, 
-                unsafe_allow_html=True
-            )
+            st.markdown(f"<div class='terminal-log'>{formatted}</div>", unsafe_allow_html=True)
         
         # Botão para limpar logs antigos
-        if st.button("🗑️ Limpar Histórico de Logs"):
+        if st.button("Limpar Histórico de Logs"):
             open("logs/automacao.log", "w").close()
             st.rerun()
     else:

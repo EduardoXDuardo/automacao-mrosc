@@ -81,27 +81,34 @@ class MROSCAutomator:
 
     def run(self, ui_callback: Optional[callable] = None, max_workers: int = 3):
         logger.info(f"[START] Automação MROSC inicializada | Job Dir: {self.output_manager.base_dir}")
-        if ui_callback: 
+        
+        is_ui_mode = ui_callback is not None
+        if is_ui_mode: 
             ui_callback({"type": "status", "message": f"Iniciando automação na UF {self.uf}..."})
-            max_workers = 1 
         
         links = self.searcher.collect_links()
         
         total_links = len(links)
         logger.info(f"[PIPELINE] Trabalhos enfileirados: {total_links}")
-        if ui_callback: ui_callback({"type": "links_found", "total": total_links, "links": links})
+        if is_ui_mode: ui_callback({"type": "links_found", "total": total_links, "links": links})
         
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = []
+        if is_ui_mode:
+            # Roda sequencial no Streamlit
             for idx, url in enumerate(links, 1):
-                futures.append(executor.submit(self._process_single_link, idx, total_links, url, ui_callback))
-                time.sleep(0.5)
-            
-            for future in as_completed(futures):
-                try:
-                    future.result()
-                except Exception as e:
-                    logger.error(f"[THREAD_ERROR] Problema catastrófico em worker: {e}")
+                self._process_single_link(idx, total_links, url, ui_callback)
+        else:
+            # Roda em paralelo na CLI
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                futures = []
+                for idx, url in enumerate(links, 1):
+                    futures.append(executor.submit(self._process_single_link, idx, total_links, url, None))
+                    time.sleep(0.5)
+                
+                for future in as_completed(futures):
+                    try:
+                        future.result()
+                    except Exception as e:
+                        logger.error(f"[THREAD_ERROR] Problema catastrófico em worker: {e}")
 
         logger.info("[FINISH] Pipiline base concluído. Encerrando conexões IO.")
         self.output_manager.save_excel(incremental=False)
