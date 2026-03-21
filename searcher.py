@@ -26,7 +26,7 @@ class Searcher:
         found = []
         queries = get_search_queries(self.uf, self.estado)
         
-        logger.info(f"🔎 Realizando web search (DDGo) para '{self.estado}' usando {len(queries)} queries...")
+        logger.info(f"[SEARCH] Iniciando varredura DuckDuckGo | Estado: {self.estado} ({self.uf}) | Queries: {len(queries)}")
         
         for q in queries:
             try:
@@ -34,11 +34,10 @@ class Searcher:
                 for r in res:
                     if not any(b in r['href'].lower() for b in Config.BLACKLIST):
                         found.append(r['href'])
-                # Previne banimento rápido adicionando respiro entre pesquisas consecutivas
                 time.sleep(1.5)
             except Exception as e:
-                logger.error(f"⚠️ Erro persistente na busca DuckDuckGo ('{q}'): {e}")
+                logger.error(f"[SEARCH_ERROR] Falha persistente na query ('{q}'): {e}")
         
         filtered = list(set(found))
-        logger.info(f"✅ Web search finalizada. Links únicos encontrados: {len(filtered)}")
+        logger.info(f"[SEARCH] Varredura concluída. Links brutos consolidados: {len(filtered)}")
         return filtered

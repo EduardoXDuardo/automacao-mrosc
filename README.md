@@ -13,8 +13,8 @@ O projeto une web scraping (DuckDuckGo) com IA (Gemini API) para analisar PDFs e
 - **Interface Web (UI):** Painel interativo integrado via Streamlit para configurar e rodar as extrações direto do navegador.
 - **Dockerizado:** Imagem Docker pronta para rodar em qualquer VPS ou PC local sem configurações complexas de dependências.
 - **Busca Automatizada:** Consulta o buscador DuckDuckGo por arquivos relacionados ao MROSC em sites governamentais.
-- **Scraping e Download:** Baixa PDFs e páginas web (HTML).
-- **Processamento de Texto e OCR:** Lê textos via `pdfplumber` e `BeautifulSoup`. Usa `pdf2image` para extrair texto de PDFs escaneados (Diários Oficiais).
+- **Scraping e Download:** Baixa PDFs e páginas web (HTML) com tratamento seguro de SSL.
+- **Processamento:** Extrai nativamente conteúdo de arquivos diretamente do Gemini 1.5, garantindo leitura total confiável e rápida, operando de forma simultânea.
 - **Análise com IA (Gemini):** Faz a triagem inteligente (se é juridicamente relevante), classifica o tipo, cria resumos e sugere um nome padronizado.
 - **Sistema de Logs Estruturado:** Monitoramento contínuo da execução salvo automaticamente em `logs/automacao.log`.
 - **Consolidação em Excel:** Gera uma planilha `dados-compilados.xlsx` com rastreabilidade completa.
@@ -24,7 +24,7 @@ O projeto une web scraping (DuckDuckGo) com IA (Gemini API) para analisar PDFs e
 ## Pré-requisitos
 
 - **Docker e Docker Compose** instalados na sua máquina (Método Recomendado).
-- Alternativamente (Método Local): Python 3.9+ e Poppler configurados.
+- Alternativamente (Método Local): Python 3.9+ configurado.
 - **Chave de API do Google Gemini** (Grátis no [Google AI Studio](https://aistudio.google.com/)).
 
 ---
@@ -59,9 +59,7 @@ docker run -p 8501:8501 -v "/$(pwd)/output:/app/output" -v "/$(pwd)/logs:/app/lo
 ### Método 2: Instalação Manual (Local)
 
 #### Windows
-1. Baixe o [Poppler para Windows](https://github.com/oschwartz10612/poppler-windows/releases/).
-2. Extraia o zip e adicione o caminho da pasta `bin` nas **Variáveis de Ambiente** do seu Windows (`Path`).
-3. Crie o ambiente virtual e instale as dependências:
+1. Crie o ambiente virtual e instale as dependências:
    ```powershell
    python -m venv venv
    .\venv\Scripts\activate
@@ -70,7 +68,7 @@ docker run -p 8501:8501 -v "/$(pwd)/output:/app/output" -v "/$(pwd)/logs:/app/lo
 
 #### Linux (Ubuntu/Debian)
 ```bash
-sudo apt-get update && sudo apt-get install poppler-utils python3-venv -y
+sudo apt-get update && sudo apt-get install python3-venv -y
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt

@@ -1,11 +1,15 @@
 import hashlib
 import requests
 import logging
+import urllib3
+from urllib3.exceptions import InsecureRequestWarning
 from pathlib import Path
 from typing import Optional
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type, before_sleep_log
 
 from config import Config, logger
+
+urllib3.disable_warnings(InsecureRequestWarning)
 
 class Downloader:
     def __init__(self, base_dir: Path):
@@ -25,7 +29,13 @@ class Downloader:
         path = None
         
         try:
-            with self.session.get(url, timeout=Config.TIMEOUT, verify=False, headers=headers, stream=True) as r:
+            try:
+                r = self.session.get(url, timeout=Config.TIMEOUT, verify=True, headers=headers, stream=True)
+            except requests.exceptions.SSLError:
+                logger.warning(f"⚠️ Falha SSL em {url}, tentando sem verificação de certificado (verify=False).")
+                r = self.session.get(url, timeout=Config.TIMEOUT, verify=False, headers=headers, stream=True)
+                
+            with r:
                 r.raise_for_status()
                 ct = r.headers.get('Content-Type', '').lower()
                 ext = ".pdf" if "pdf" in ct or url.lower().endswith('.pdf') else ".html"

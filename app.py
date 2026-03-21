@@ -13,30 +13,47 @@ st.markdown("""
 <style>
     .main-title {
         text-align: center;
-        color: #1F618D;
-        font-family: 'Arial', sans-serif;
-        font-weight: 700;
+        color: #1a365d;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-weight: 800;
         margin-bottom: 0px;
-        padding-bottom: 0px;
+        padding-bottom: 5px;
+        letter-spacing: -0.5px;
     }
     .sub-title {
         text-align: center;
-        color: #7F8C8D;
+        color: #4a5568;
         font-size: 1.1em;
-        margin-top: 5px;
+        margin-top: 0px;
         margin-bottom: 30px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
     .stButton>button {
-        border-radius: 8px;
-        font-weight: bold;
-        transition: all 0.3s;
+        border-radius: 6px;
+        font-weight: 600;
+        transition: all 0.2s ease-in-out;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
     }
     .stButton>button:hover {
-        transform: scale(1.02);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.06);
     }
     div[data-testid="stSidebar"] {
-        background-color: #f8f9f9;
-        padding: 10px;
+        background-color: #f7fafc;
+        border-right: 1px solid #e2e8f0;
+    }
+    .status-card {
+        background-color: #ffffff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        border: 1px solid #e2e8f0;
+        margin-bottom: 20px;
+    }
+    .metric-value {
+        font-size: 1.8em;
+        font-weight: bold;
+        color: #2b6cb0;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -62,9 +79,11 @@ if "dialog_open" not in st.session_state:
 if "dialog_action" not in st.session_state:
     st.session_state.dialog_action = None
 
-st.markdown('<div class="main-title" style="font-size: 1.8em; margin-bottom: 20px;">Automação MROSC</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title" style="font-size: 2.2em;">Automação MROSC</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Coleta e Classificação de Documentos Jurídicos com IA</div>', unsafe_allow_html=True)
 
 st.sidebar.header("⚙️ Configurações da Busca")
+st.sidebar.markdown("---")
 estado = st.sidebar.selectbox("Estado alvo (UF)", [
     "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", 
     "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", 
@@ -189,69 +208,114 @@ if st.session_state.running_state != "idle":
 
     # MODO AUTOMÁTICO (COMO ERA ANTES)
     if st.session_state.running_state == "running_auto":
-        st.markdown("**⚡ Execução Automática**")
+        st.markdown('<h3>⚡ Execução Automática em Andamento</h3>', unsafe_allow_html=True)
+        
+        # Area for metrics
+        m1, m2, m3 = st.columns(3)
+        metric_total = m1.empty()
+        metric_current = m2.empty()
+        metric_saved = m3.empty()
+        
+        metric_total.metric("Links Encontrados", "0")
+        metric_current.metric("Processando Agora", "0 / 0")
+        metric_saved.metric("Documentos Salvos", "0")
+        
+        st.markdown("---")
         progress_bar = st.progress(0)
         status_text = st.empty()
         st.markdown("---")
         
         col1, col2 = st.columns(2)
         with col1:
-            st.markdown("**Último Arquivo Processado**")
+            st.markdown("#### 📄 Último Arquivo Processado")
             viewer_placeholder = st.empty()
         with col2:
-            st.markdown("**Última Análise**")
+            st.markdown("#### 🧠 Última Análise da IA")
             ai_placeholder = st.empty()
 
         if not st.session_state.automator:
             st.session_state.automator = MROSCAutomator(uf=estado, estado=nome_estado)
             
         def automator_callback(event):
-            if event["type"] == "status":
-                status_text.text(event["message"])
-            elif event["type"] == "links_found":
-                status_text.success(f"🔍 Encontrados {event['total']} links para analisar.")
-            elif event["type"] == "downloading":
-                pct = event["current"] / event["total"]
-                progress_bar.progress(pct)
-                status_text.info(f"⏳ Processando documento {event['current']} de {event['total']}... \n\nFonte: {event['url']}")
-                ai_placeholder.info("⏳ Aguardando processamento da IA...")
-                viewer_placeholder.info("📥 Baixando arquivo...")
-            elif event["type"] == "downloaded":
-                path = event["path"]
-                try:
-                    viewer_placeholder.empty()
-                    if path.endswith(".html"):
-                        with open(path, "r", encoding="utf-8", errors="ignore") as f:
-                            content = f.read()
-                            import streamlit.components.v1 as components
-                            with viewer_placeholder.container():
-                                components.html(f"<div style='border: 1px solid #ccc; padding:10px; border-radius:5px;'>{content}</div>", height=450, scrolling=True)
-                    elif path.endswith(".pdf"):
-                        with open(path, "rb") as f:
-                            base64_pdf = base64.b64encode(f.read()).decode('utf-8')
-                        pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="450" type="application/pdf" style="border: 1px solid #ccc; border-radius:5px;"></iframe>'
-                        viewer_placeholder.markdown(pdf_display, unsafe_allow_html=True)
-                    else:
-                        viewer_placeholder.info(f"Arquivo recebido: {path}")
-                except Exception as e:
-                    viewer_placeholder.error(f"Não foi possível visualizar: {e}")
-            elif event["type"] == "analysis_done":
-                analysis = event.get("analysis")
-                ai_placeholder.empty()
-                with ai_placeholder.container():
-                    if isinstance(analysis, dict):
-                        if analysis.get("relevante"):
-                            st.success("✅ **Relevante!** Salvando...")
+            try:
+                if event["type"] == "status":
+                    status_text.info(f"🔄 **Status:** {event['message']}")
+                elif event["type"] == "links_found":
+                    metric_total.metric("Links Encontrados", event['total'])
+                    status_text.success(f"🔍 Busca finalizada. {event['total']} links encontrados na web.")
+                elif event["type"] == "downloading":
+                    pct = event["current"] / event["total"]
+                    progress_bar.progress(pct)
+                    metric_current.metric("Processando Agora", f"{event['current']} / {event['total']}")
+                    status_text.warning(f"⏳ **Baixando:** {event['url']}")
+                    ai_placeholder.info("⏳ Aguardando processamento da IA...")
+                    viewer_placeholder.info("📥 Baixando arquivo...")
+                elif event["type"] == "downloaded":
+                    path = event["path"]
+                    try:
+                        viewer_placeholder.empty()
+                        if path.endswith(".html"):
+                            with open(path, "r", encoding="utf-8", errors="ignore") as f:
+                                content = f.read()
+                                import streamlit.components.v1 as components
+                                with viewer_placeholder.container():
+                                    components.html(f"<div style='border: 1px solid #e2e8f0; padding:15px; border-radius:8px; background: white; box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06); height: 500px; overflow-y: auto;'>{content}</div>", height=520, scrolling=False)
+                        elif path.endswith(".pdf"):
+                            with open(path, "rb") as f:
+                                base64_pdf = base64.b64encode(f.read()).decode('utf-8')
+                            pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="520" type="application/pdf" style="border: 1px solid #e2e8f0; border-radius:8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"></iframe>'
+                            viewer_placeholder.markdown(pdf_display, unsafe_allow_html=True)
                         else:
-                            st.warning("❌ **Não Relevante.** Descartando...")
-                        st.json(analysis, expanded=False)
-                    else:
-                        st.error("⚠️ Falha na análise.")
-            elif event["type"] == "done":
-                progress_bar.progress(1.0)
-                status_text.success(f"Finalizado! {event['results_count']} documentos relevantes salvos com sucesso.")
-                st.balloons()
+                            viewer_placeholder.info(f"Arquivo recebido: {path}")
+                    except Exception as e:
+                        viewer_placeholder.error(f"Não foi possível visualizar: {e}")
+                elif event["type"] == "analysis_done":
+                    analysis = event.get("analysis")
+                    ai_placeholder.empty()
+                    with ai_placeholder.container():
+                        if isinstance(analysis, dict):
+                            if analysis.get("relevante"):
+                                st.success(f"✅ **Relevante:** {analysis.get('titulo', 'Documento sem título')}")
+                            else:
+                                st.error("❌ **Não Relevante:** Arquivo descartado.")
+                            
+                            st.json(analysis, expanded=True)
+                        else:
+                            st.warning("⚠️ Falha na análise ou retorno inesperado.")
+                elif event["type"] == "saved":
+                    saved_count = len(st.session_state.automator.output_manager.results)
+                    metric_saved.metric("Documentos Salvos", f"{saved_count}")
+                elif event["type"] == "done":
+                    progress_bar.progress(1.0)
+                    status_text.success(f"🎉 **Finalizado!** {event['results_count']} documentos relevantes salvos com sucesso.")
+                    st.balloons()
+                
+                if 'log_placeholder' in st.session_state and os.path.exists("logs/automacao.log"):
+                    with open("logs/automacao.log", "r", encoding="utf-8") as f:
+                        lines = f.readlines()[-30:]
+                        log_content = "".join(lines)
+                        st.session_state.log_placeholder.markdown(
+                            f"""
+                            <div style="background-color: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 8px; font-family: 'Courier New', Courier, monospace; font-size: 0.9em; height: 300px; overflow-y: scroll; white-space: pre-wrap; margin-bottom: 20px;">
+{log_content}
+                            </div>
+                            """, 
+                            unsafe_allow_html=True
+                        )
+
+            except Exception as callback_err:
+                pass # Previne falhas de context no streamlit de travarem a automação
         
+        st.markdown("---")
+        st.markdown("### 📋 Diário de Execução (Tempo Real)")
+        st.session_state.log_placeholder = st.empty()
+        
+        if os.path.exists("logs/automacao.log"):
+            with open("logs/automacao.log", "r", encoding="utf-8") as f:
+                lines = f.readlines()[-30:]
+                log_content = "".join(lines)
+                st.session_state.log_placeholder.markdown(f'<div style="background-color: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 8px; font-family: \'Courier New\', Courier, monospace; font-size: 0.9em; height: 300px; overflow-y: scroll; white-space: pre-wrap; margin-bottom: 20px;">{log_content}</div>', unsafe_allow_html=True)
+
         st.session_state.automator.run(ui_callback=automator_callback)
         st.success("Automação em Lote concluída.")
         
@@ -273,7 +337,6 @@ if st.session_state.running_state != "idle":
             reset_state()
             safe_rerun()
 
-    # MODO MANUAL ITERATIVO
     elif st.session_state.running_state == "running_manual":
         if not st.session_state.automator:
             st.session_state.automator = MROSCAutomator(uf=estado, estado=nome_estado)
@@ -298,7 +361,7 @@ if st.session_state.running_state != "idle":
                 
                 with open(zip_path, "rb") as f:
                     st.download_button(
-                        label="📥 Baixar Resultados (.zip)",
+                        label="Baixar Resultados (.zip)",
                         data=f,
                         file_name=os.path.basename(zip_path),
                         mime="application/zip"
@@ -355,12 +418,28 @@ if st.session_state.running_state != "idle":
             )
 
 # Visualizador de Logs 
-st.markdown("---")
-st.markdown("**Últimos Logs**")
-if os.path.exists("logs/automacao.log"):
-    with open("logs/automacao.log", "r", encoding="utf-8") as f:
-        lines = f.readlines()[-15:]
-        st.code("".join(lines), language="text")
-else:
-    st.write("Nenhum log gerado ainda.")
+if st.session_state.running_state == "idle":
+    st.markdown("---")
+    st.markdown("### 📋 Histórico de Execução (Logs)")
+    if os.path.exists("logs/automacao.log"):
+        with open("logs/automacao.log", "r", encoding="utf-8") as f:
+            # Pega as últimas 30 linhas
+            lines = f.readlines()[-30:]
+            log_content = "".join(lines)
+            
+            st.markdown(
+                f"""
+                <div style="background-color: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 8px; font-family: 'Courier New', Courier, monospace; font-size: 0.9em; height: 300px; overflow-y: scroll; white-space: pre-wrap; margin-bottom: 20px;">
+{log_content}
+                </div>
+                """, 
+                unsafe_allow_html=True
+            )
+        
+        # Botão para limpar logs antigos
+        if st.button("🗑️ Limpar Histórico de Logs"):
+            open("logs/automacao.log", "w").close()
+            st.rerun()
+    else:
+        st.info("Nenhum log gerado ainda.")
 

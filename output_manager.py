@@ -43,7 +43,7 @@ class OutputManager:
                 except Exception:
                     temp_path.replace(final_path)
                     
-                logger.info(f"✅ DOCUMENTO SALVO! Tipo: {analysis.get('tipo', 'N/A')} -> {final_filename}")
+                logger.info(f"[DB_SAVE] Documento arquivado (Tipo: {analysis.get('tipo', 'N/A')}) -> {final_filename}")
                 
                 result_dict = {
                     "UNIDADE FEDERATIVA": self.estado,
@@ -66,12 +66,12 @@ class OutputManager:
                 excel_path = self.base_dir / "dados-compilados.xlsx"
                 df.to_excel(excel_path, index=False)
                 if not incremental:
-                    logger.info(f"✨ PROCESSO CONCLUÍDO!")
-                    logger.info(f"📂 Planilha final gerada em: {excel_path}")
+                    logger.info(f"[DB_FINISH] Exportação Final concluída com SUCESSO.")
+                    logger.info(f"[DB_FINISH] Planilha gerada no caminho: {excel_path}")
                 else:
-                    logger.info(f"💾 Planilha ATUALIZADA (Total: {len(self.results)} docs)...")
+                    logger.info(f"[DB_OK] Planilha Dataframe Incremental atualizada. (Docs: {len(self.results)})")
             except Exception as e:
-                logger.error(f"❌ Erro ao salvar planilha Excel: {e}")
+                logger.error(f"[DB_ERROR] Falha de I/O ao gravar XLS: {e}")
         else:
             if not incremental:
-                logger.warning("⚠️ PROCESSO CONCLUÍDO, mas nenhum documento válido foi encontrado/cadastrado.")
+                logger.warning("[DB_WARN] Job finalizado sem nenhum artefato classificado como Relevante.")

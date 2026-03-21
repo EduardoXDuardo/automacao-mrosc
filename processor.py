@@ -26,6 +26,23 @@ class DocumentProcessor:
             logger.error("❌ GEMINI_API_KEY não configurada no .env")
             raise ValueError("GEMINI_API_KEY não configurada no .env")
         self.client = genai.Client(api_key=api_key)
+        self.cleanup_all_files()
+
+    def cleanup_all_files(self):
+        """Limpa arquivos que possam ter ficado no servidor Gemini de execuções anteriores, se houvesse erro de cancelamento ou falha"""
+        try:
+            files_to_delete = []
+            for f in self.client.files.list():
+                files_to_delete.append(f.name)
+            
+            for f_name in files_to_delete:
+                try:
+                    self.client.files.delete(name=f_name)
+                    logger.info(f"🗑️ Arquivo órfão limpo internamente no Gemini: {f_name}")
+                except Exception:
+                    pass
+        except Exception as e:
+            logger.warning(f"⚠️ Não foi possível limpar os arquivos antigos. {e}")
 
     def get_document_content(self, path: Path) -> List[types.Part]:
         parts = []
