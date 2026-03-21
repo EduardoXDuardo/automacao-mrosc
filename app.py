@@ -18,43 +18,54 @@ st.markdown("""
     }
 
     .header-container {
-        padding: 30px 0 20px 0;
+        padding: 40px 20px 30px 20px;
         text-align: center;
-        background: linear-gradient(135deg, #f6f8fd 0%, #f1f5f9 100%);
-        border-radius: 12px;
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        border-radius: 16px;
         margin-bottom: 40px;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        color: white;
     }
     .main-title {
-        color: #0f172a;
-        font-weight: 700;
-        font-size: 2.8em;
+        color: white;
+        font-weight: 800;
+        font-size: 3rem;
         margin: 0;
-        letter-spacing: -1px;
+        letter-spacing: -1.5px;
     }
     .sub-title {
-        color: #475569;
-        font-size: 1.25em;
+        color: #94a3b8;
+        font-size: 1.15rem;
         font-weight: 400;
-        margin-top: 8px;
+        margin-top: 10px;
         margin-bottom: 0;
     }
 
     .stButton>button {
         border-radius: 8px;
         font-weight: 600;
-        padding: 10px 24px;
-        transition: all 0.2s ease;
+        padding: 0.6rem 1.2rem;
+        transition: all 0.2s ease-in-out;
     }
     .stButton>button[kind="primary"] {
         background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        color: white;
         border: none;
-        box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+        box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
     }
     .stButton>button[kind="primary"]:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 8px -1px rgba(37, 99, 235, 0.3);
+        box-shadow: 0 6px 12px -1px rgba(37, 99, 235, 0.4);
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    }
+    .stButton>button[kind="secondary"] {
+        background: #f1f5f9;
+        color: #334155;
+        border: 1px solid #cbd5e1;
+    }
+    .stButton>button[kind="secondary"]:hover {
+        background: #e2e8f0;
+        transform: translateY(-2px);
     }
     
     [data-testid="stSidebar"] {
@@ -69,40 +80,45 @@ st.markdown("""
     div.stMetric {
         background-color: #ffffff;
         border: 1px solid #e2e8f0;
-        border-radius: 10px;
-        padding: 15px 20px;
-        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        border-radius: 12px;
+        padding: 20px 25px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     }
     div[data-testid="stMetricValue"] {
         color: #2563eb;
-        font-weight: 700;
-        font-size: 2rem;
+        font-weight: 800;
+        font-size: 2.2rem;
+    }
+    div[data-testid="stMetricLabel"] {
+        color: #64748b;
+        font-weight: 500;
+        font-size: 1rem;
     }
     
     .terminal-log {
         background-color: #0f172a;
         color: #10b981;
         padding: 20px;
-        border-radius: 10px;
+        border-radius: 12px;
         font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
         font-size: 0.9em;
         height: 350px;
         overflow-y: auto;
         white-space: pre-wrap;
-        box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.2);
+        box-shadow: inset 0 4px 6px rgba(0, 0, 0, 0.3);
         border: 1px solid #1e293b;
-        line-height: 1.5;
+        line-height: 1.6;
     }
-    .terminal-log span.error { color: #ef4444; }
+    .terminal-log span.error { color: #ef4444; font-weight: bold; }
     .terminal-log span.info { color: #3b82f6; }
     .terminal-log span.warning { color: #f59e0b; }
     
     .doc-viewer {
         border: 1px solid #e2e8f0;
-        border-radius: 10px;
+        border-radius: 12px;
         padding: 0;
-        background: #f8fafc;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        background: #ffffff;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
         overflow: hidden;
     }
 </style>
@@ -150,10 +166,7 @@ limite = st.sidebar.slider("Limite de resultados por query", 1, 50, 10, disabled
 modo_manual = st.sidebar.checkbox("Modo Manual (Aprovação Passo a Passo)", value=False, disabled=(st.session_state.running_state != "idle"))
 
 def safe_rerun():
-    if hasattr(st, 'rerun'):
-        st.rerun()
-    else:
-        st.experimental_rerun()
+    st.rerun()
 
 def process_manual_action(action, url, path, analysis, automator):
     if action == "approve":
@@ -237,6 +250,11 @@ if st.session_state.running_state == "idle":
     col_btn, _ = st.columns([1, 2])
     with col_btn:
         if st.button("🚀 Iniciar Automação", use_container_width=True, type="primary"):
+            # Setup log path correctly
+            os.makedirs("logs", exist_ok=True)
+            if not os.path.exists("logs/automacao.log"):
+                open("logs/automacao.log", "w", encoding="utf-8").close()
+                
             st.session_state.modo_manual = modo_manual
             st.session_state.running_state = "running_manual" if modo_manual else "running_auto"
             safe_rerun()
