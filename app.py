@@ -2,6 +2,7 @@
 import os
 import time
 import base64
+import shutil
 from pathlib import Path
 from config import logger 
 
@@ -253,6 +254,21 @@ if st.session_state.running_state != "idle":
         
         st.session_state.automator.run(ui_callback=automator_callback)
         st.success("Automação em Lote concluída.")
+        
+        base_dir = st.session_state.automator.output_manager.base_dir
+        if base_dir and os.path.exists(base_dir):
+            zip_path = str(base_dir) + ".zip"
+            if not os.path.exists(zip_path):
+                shutil.make_archive(str(base_dir), 'zip', str(base_dir))
+            
+            with open(zip_path, "rb") as f:
+                st.download_button(
+                    label="📥 Baixar Resultados (.zip)",
+                    data=f,
+                    file_name=os.path.basename(zip_path),
+                    mime="application/zip"
+                )
+
         if st.button("Finalizar e Voltar", key="btn_finalizar"):
             reset_state()
             safe_rerun()
@@ -273,7 +289,20 @@ if st.session_state.running_state != "idle":
 
         if idx >= total:
             st.success(f"Fim da lista! {total} documentos processados.")
-            automator.output_manager.save_excel(incremental=False)
+            automator.output_manager.save_excel(incremental=False)            
+            base_dir = automator.output_manager.base_dir
+            if base_dir and os.path.exists(base_dir):
+                zip_path = str(base_dir) + ".zip"
+                if not os.path.exists(zip_path):
+                    shutil.make_archive(str(base_dir), 'zip', str(base_dir))
+                
+                with open(zip_path, "rb") as f:
+                    st.download_button(
+                        label="📥 Baixar Resultados (.zip)",
+                        data=f,
+                        file_name=os.path.basename(zip_path),
+                        mime="application/zip"
+                    )
             if st.button("Concluir Processo"):
                 reset_state()
                 safe_rerun()
