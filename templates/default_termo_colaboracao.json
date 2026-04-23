@@ -1,0 +1,48 @@
+{
+  "nome": "Pesquisa MROSC_Quantitativa_Termos_Fomento_Municipal",
+  "descricao": "Template para pesquisa e extração de dados quantitativos de Termos de Fomento e Colaboração (Lei 13.019/2014) em âmbito municipal, com foco na área Socioassistencial, Emendas Parlamentares e Dispensas, período de 2023 a 2025.",
+  "variaveis_esperadas": [
+    {"nome": "municipio", "descricao": "Nome do Município (Ex: Salvador)"},
+    {"nome": "uf", "descricao": "Sigla do Estado (Ex: BA)"}
+  ],
+  "blacklist": [
+    "wikipedia.org",
+    "grancursosonline.com.br",
+    "estrategiaconcursos.com.br",
+    "direitocom.com",
+    "brainly.com.br",
+    "passeidireto.com",
+    "jus.com.br"
+  ],
+  "queries": [
+    "\"termo de fomento\" OR \"termo de colaboração\" {municipio} {uf} 2023 OR 2024 OR 2025",
+    "\"dispensa de chamamento público\" \"assistência social\" OR \"SUAS\" {municipio} {uf}",
+    "\"emenda parlamentar\" \"termo de fomento\" {municipio} {uf}",
+    "\"Lei 13.019\" \"desenvolvimento social\" OR \"sócio assistencial\" {municipio}",
+    "extrato parceria OSC \"termo de fomento\" {municipio}",
+    "\"MROSC\" parceiras \"assistência social\" {municipio} 2023..2025",
+    "site:jusbrasil.com.br/diarios \"termo de fomento\" {municipio} {uf}",
+    "site:jusbrasil.com.br/diarios \"dispensa de chamamento\" OSC {municipio} {uf}",
+    "site:doinet.com.br \"termo de fomento\" {municipio}",
+    "site:egba.ba.gov.br \"termo de fomento\" {municipio}",
+    "site:egba.ba.gov.br \"dispensa de chamamento\" {municipio}",
+    "site:iof.mg.gov.br \"termo de fomento\" {municipio}",
+    "site:jornal.iof.mg.gov.br \"termo de fomento\" {municipio}"
+  ],
+  "instrucoes_prompt": "Você está analisando extratos de Diários Oficiais, portais de transparência e documentos públicos do município de {municipio} - {uf}, publicados entre 2023 e 2025.\n\nSeu objetivo principal é extrair DADOS QUANTITATIVOS e estruturados sobre parcerias celebradas com Organizações da Sociedade Civil (MROSC - Lei 13.019/2014).\n\nFoco da Análise:\n- Identificar Termos de Fomento e Termos de Colaboração.\n- Rastrear parcerias da área Socioassistencial (Assistência Social, SUAS, Desenvolvimento Social).\n- Identificar se houve 'Dispensa de Chamamento Público'.\n- Identificar a origem do recurso, especialmente se for fruto de 'Emenda Parlamentar'.\n\nCritérios de Exclusão (Classifique como NÃO relevante):\n- Notícias genéricas sem dados de valores ou nomes de OSCs.\n- Leis e Decretos apenas normativos (neste escopo, queremos as parcerias executadas/extratos).\n- Documentos fora do período de 2023 a 2025.\n\nPara documentos relevantes, extraia meticulosamente os dados solicitados pelo schema de resposta. Valores financeiros devem conter apenas números e ponto decimal. Retorne APENAS o JSON válido conforme o schema fornecido.",
+  "schema_de_saida": [
+    {"nome": "relevante", "tipo": "bool", "descricao": "Booleano que indica se o documento contém dados de uma parceria específica executada/publicada no período (2023-2025)."},
+    {"nome": "id_unico", "tipo": "str", "descricao": "Um identificador curto para o documento/extrato (ex: extrato-fomento-001-2023)."},
+    {"nome": "municipio", "tipo": "str", "descricao": "Município concedente da parceria."},
+    {"nome": "ano_publicacao", "tipo": "int_opt", "descricao": "Ano da publicação do extrato ou celebração do termo (2023, 2024 ou 2025)."},
+    {"nome": "tipo_instrumento", "tipo": "str_opt", "descricao": "Tipo exato do instrumento: 'Termo de Fomento', 'Termo de Colaboração', 'Acordo de Cooperação'."},
+    {"nome": "nome_osc", "tipo": "str_opt", "descricao": "Nome da Organização da Sociedade Civil (OSC) parceira."},
+    {"nome": "cnpj_osc", "tipo": "str_opt", "descricao": "CNPJ da OSC parceira, caso conste no documento."},
+    {"nome": "valor_global_reais", "tipo": "float_opt", "descricao": "Valor total repassado na parceria (formato numérico, sem 'R$')."},
+    {"nome": "area_assistencia_social", "tipo": "bool_opt", "descricao": "True se a parceria for relacionada a SUAS, Assistência Social ou Desenvolvimento Social."},
+    {"nome": "teve_dispensa_chamamento", "tipo": "bool_opt", "descricao": "True se o texto mencionar expressamente 'Dispensa de Chamamento Público' ou 'Inexigibilidade'."},
+    {"nome": "recurso_emenda_parlamentar", "tipo": "bool_opt", "descricao": "True se o repasse for decorrente de 'Emenda Parlamentar' (impositiva ou não)."},
+    {"nome": "numero_processo_ou_termo", "tipo": "str_opt", "descricao": "Número do Termo ou do Processo Administrativo correspondente."},
+    {"nome": "objeto_resumido", "tipo": "str_opt", "descricao": "Resumo muito conciso (até 15 palavras) do objeto da parceria."}
+  ]
+}

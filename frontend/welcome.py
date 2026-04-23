@@ -4,7 +4,7 @@ from frontend.state import safe_rerun
 from frontend.components import render_section_header, render_terminal, render_divider
 
 
-def render_welcome(modo_manual: bool):
+def render_welcome(modo_manual: bool, template_data: dict = None):
     """Renderiza a página idle/welcome com feature cards, botão CTA, e logs laterais."""
     
     # Layout principal: conteúdo à esquerda, logs à direita
@@ -41,7 +41,7 @@ def render_welcome(modo_manual: bool):
 
         col_btn, _ = st.columns([1, 2])
         with col_btn:
-            is_ready = st.session_state.get("template_data") is not None
+            is_ready = template_data is not None
             if st.button("🚀  Iniciar Automação", use_container_width=True, type="primary", disabled=not is_ready):
                 os.makedirs("logs", exist_ok=True)
                 if not os.path.exists("logs/automacao.log"):

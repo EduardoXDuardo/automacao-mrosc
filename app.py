@@ -25,7 +25,7 @@ template_data, variables, limite, modo_manual = render_sidebar()
 
 # ── Roteamento de Páginas ──
 if st.session_state.running_state == "idle":
-    render_welcome(modo_manual)
+    render_welcome(modo_manual, template_data)
 elif st.session_state.running_state == "running_auto":
     render_auto_mode(template_data, variables, limite)
 elif st.session_state.running_state == "running_manual":
