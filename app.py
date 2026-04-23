@@ -6,6 +6,7 @@ from frontend.sidebar import render_sidebar
 from frontend.welcome import render_welcome
 from frontend.auto_mode import render_auto_mode
 from frontend.manual_mode import render_manual_mode
+from frontend.template_editor import render_template_editor
 
 # ── Configuração da Página ──
 st.set_page_config(page_title="Automação MROSC", layout="wide", page_icon="⚡")
@@ -20,12 +21,14 @@ init_session_state()
 render_hero_header()
 
 # ── Sidebar ──
-estado, limite, modo_manual = render_sidebar()
+template_data, variables, limite, modo_manual = render_sidebar()
 
 # ── Roteamento de Páginas ──
 if st.session_state.running_state == "idle":
     render_welcome(modo_manual)
 elif st.session_state.running_state == "running_auto":
-    render_auto_mode(estado, limite)
+    render_auto_mode(template_data, variables, limite)
 elif st.session_state.running_state == "running_manual":
-    render_manual_mode(estado, limite)
+    render_manual_mode(template_data, variables, limite)
+elif st.session_state.running_state == "template_editor":
+    render_template_editor()
