@@ -10,7 +10,7 @@ def load_local_templates():
     return [f.name for f in template_dir.glob("*.json")]
 
 def load_template_data(filename: str) -> dict:
-    with open(Path("templates") / filename, "r", encoding="utf-8") as f:
+    with open(Path("templates") / filename, "r", encoding="utf-8-sig") as f:
         return json.load(f)
 
 def render_sidebar() -> tuple[dict, dict, int, bool]:
@@ -39,7 +39,8 @@ def render_sidebar() -> tuple[dict, dict, int, bool]:
     
     if uploaded_template is not None:
         try:
-            template_data = json.load(uploaded_template)
+            content = uploaded_template.getvalue().decode("utf-8-sig")
+            template_data = json.loads(content)
             selected_template_name = "Template Customizado"
             st.sidebar.success("Template carregado!")
         except Exception as e:

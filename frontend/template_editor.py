@@ -28,7 +28,8 @@ def render_template_editor():
     
     if uploaded_edit is not None:
         try:
-            data = json.load(uploaded_edit)
+            content = uploaded_edit.getvalue().decode("utf-8-sig")
+            data = json.loads(content)
             default_vals["nome"] = data.get("nome", default_vals["nome"])
             default_vals["descricao"] = data.get("descricao", default_vals["descricao"])
             default_vals["sites"] = "\n".join(data.get("sites_especificos", [])) or default_vals["sites"]
