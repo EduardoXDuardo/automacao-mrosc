@@ -52,22 +52,25 @@ class OutputManager:
                     self.seen_ids.discard(uid)
                     return False
                     
-            logger.info(f"[DB_SAVE] Documento arquivado (Tipo: {analysis.get('tipo', 'N/A')}) -> {final_filename}")
+            logger.info(f"[DB_SAVE] Documento arquivado -> {final_filename}")
             
             result_dict = {
-                "UNIDADE FEDERATIVA": self.estado,
+                "UF / ESTADO": self.estado,
                 "CÓDIGO DO DOCUMENTO": doc_id,
-                "TIPO": analysis.get("tipo", "N/A"),
-                "TITULO": analysis.get("titulo", "N/A"),
-                "ANO": analysis.get("ano", "N/A"),
-                "DIMENSÃO": analysis.get("dimensao", "N/A"),
-                "INSTRUMENTO MROSC": analysis.get("instrumento_mrosc", "N/A"),
-                "TEM FLUXO OPERACIONAL": analysis.get("tem_fluxo_operacional", False),
-                "TEM INSTRUMENTOS GESTÃO": analysis.get("tem_instrumentos_gestao", False),
-                "LINK": url,
-                "CONSIDERAÇÃO": analysis.get("consideracao", ""),
-                "ARQUIVO LOCAL": f"archives/{final_filename}"
             }
+            
+            # Incorpora dinamicamente todos os campos que vieram no schema do LLM
+            # com exceção de nomes técnicos indesejados na planilha final
+            for key, val in analysis.items():
+                if key not in ["id_unico", "nome_arquivo_sugerido", "relevante"]:
+                    nome_coluna = str(key).replace("_", " ").upper()
+                    result_dict[nome_coluna] = val
+                    
+            result_dict.update({
+                "LINK": url,
+                "ARQUIVO LOCAL": f"archives/{final_filename}"
+            })
+            
             self.results.append(result_dict)
 
         # Excel write happens OUTSIDE the data lock to avoid blocking other threads

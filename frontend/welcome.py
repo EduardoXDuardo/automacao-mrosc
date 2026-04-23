@@ -13,7 +13,7 @@ def render_welcome(modo_manual: bool):
     with col_main:
         st.markdown('''
         <div class="welcome-info">
-            <strong>Bem-vindo ao Automação MROSC.</strong> Este sistema utiliza Inteligência Artificial para buscar, baixar e classificar automaticamente editais, parcerias, pautas, relatórios e manuais do MROSC nos portais oficiais dos estados brasileiros. Configure os parâmetros na barra lateral e inicie a automação.
+            <strong>Bem-vindo à Plataforma de Automação & Análise.</strong> Este sistema utiliza Inteligência Artificial para buscar, baixar e classificar automaticamente documentos através de templates modulares. Selecione um template na barra lateral e inicie a automação.
         </div>
         ''', unsafe_allow_html=True)
 
@@ -22,17 +22,17 @@ def render_welcome(modo_manual: bool):
             <div class="feature-card">
                 <div class="feature-icon">🔍</div>
                 <div class="feature-title">Busca Inteligente</div>
-                <div class="feature-desc">Varredura automática em portais oficiais utilizando queries especializadas em MROSC e parcerias com OSCs.</div>
+                <div class="feature-desc">Varredura automática em portais oficiais utilizando suas queries ativas do Template carregado.</div>
             </div>
             <div class="feature-card">
                 <div class="feature-icon">🤖</div>
                 <div class="feature-title">Análise com Gemini AI</div>
-                <div class="feature-desc">Cada documento é analisado pela IA que classifica relevância, tipo, dimensão e extrai metadados estruturados.</div>
+                <div class="feature-desc">Cada documento é analisado pela IA que extrai as exatas colunas que você configurar e extrai metadados estruturados.</div>
             </div>
             <div class="feature-card">
                 <div class="feature-icon">📊</div>
                 <div class="feature-title">Relatórios Consolidados</div>
-                <div class="feature-desc">Resultados exportados em planilha Excel com todos os metadados e documentos originais arquivados.</div>
+                <div class="feature-desc">Resultados exportados em planilhas XLSX montadas dinamicamente com base nas respostas arquivados.</div>
             </div>
         </div>
         ''', unsafe_allow_html=True)
@@ -41,7 +41,8 @@ def render_welcome(modo_manual: bool):
 
         col_btn, _ = st.columns([1, 2])
         with col_btn:
-            if st.button("🚀  Iniciar Automação", use_container_width=True, type="primary"):
+            is_ready = st.session_state.get("template_data") is not None
+            if st.button("🚀  Iniciar Automação", use_container_width=True, type="primary", disabled=not is_ready):
                 os.makedirs("logs", exist_ok=True)
                 if not os.path.exists("logs/automacao.log"):
                     open("logs/automacao.log", "w", encoding="utf-8").close()
@@ -68,3 +69,4 @@ def render_welcome(modo_manual: bool):
                 st.rerun()
         else:
             st.info("Nenhum log gerado ainda.")
+

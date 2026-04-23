@@ -13,16 +13,22 @@ from backend.downloader import Downloader
 from backend.output_manager import OutputManager
 
 class MROSCAutomator:
-    def __init__(self, uf: str, estado: str, limit: int = 10):
-        self.uf = uf.upper()
-        self.estado = estado
+    def __init__(self, template_data: dict, variables: dict, limit: int = 10):
+        self.template_data = template_data
+        self.variables = variables
+        
+        estado_name = variables.get("estado", "Unknown")
+        uf_code = variables.get("uf", "XX").upper()
+        
+        self.uf = uf_code
+        self.estado = estado_name
         
         if limit < 1:
             raise ValueError("O parâmetro 'limit' deve ser >= 1")
         
         self.processor = DocumentProcessor(Config.get_api_key())
             
-        self.searcher = Searcher(self.uf, self.estado, limit=limit)
+        self.searcher = Searcher(template_data, variables, limit=limit)
         self.timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         
         self.output_manager = OutputManager(self.uf, self.estado, self.timestamp)
@@ -48,12 +54,15 @@ class MROSCAutomator:
             
             logger.info(f"[AI_ANALYSIS] Disparando requisição {Config.MODEL_ID} - {url}")
             if ui_callback: ui_callback({"type": "analyzing", "url": url})
-            analysis = self.processor.analyze(parts, url, self.estado)
+            
+            analysis = self.processor.analyze(parts, url, self.template_data, self.variables)
             
             if ui_callback: ui_callback({"type": "analysis_done", "url": url, "analysis": analysis})
             
-            if isinstance(analysis, dict) and analysis.get("relevante"):
-                salvo = self.output_manager.process_and_save_document(url, temp_path, analysis)
+            if isinstance(analysis, dict):
+                is_relevante = analysis.get("relevante", True)
+                if is_relevante:
+                    salvo = self.output_manager.process_and_save_document(url, temp_path, analysis)
                 if salvo:
                     if ui_callback: 
                         final_path = self.output_manager.archives_dir / Path(self.output_manager.results[-1]["ARQUIVO LOCAL"]).name

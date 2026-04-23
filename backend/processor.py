@@ -1,30 +1,46 @@
 import json
 import time
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 from bs4 import BeautifulSoup
 from google import genai
 from google.genai import types
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, create_model
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type, before_sleep_log
 import logging
 
 from backend.config import Config, logger
 from backend.prompts import get_analysis_prompt
 
-class AnalysisResult(BaseModel):
-    relevante: bool = Field(description="Booleano que indica se o documento é relevante para o assunto MROSC.")
-    id_unico: str = Field(description="Um identificador curto e único para este documento baseado no título (ex: dec-61981-sp).")
-    nome_arquivo_sugerido: str = Field(description="Um nome de arquivo curto, em snake_case, sem extensão, representando o arquivo.")
-    tipo: str = Field(description="A categoria legal ou tipo do documento (ex: Decreto, Lei, Portaria, Manual, Guia, etc).")
-    titulo: str = Field(description="O título oficial ou manchete principal do documento.")
-    consideracao: str = Field(description="Resumo técnico objetivo destacando o que o documento regula ou operacionaliza.")
-    ano: Optional[str] = Field(default=None, description="Ano do documento, se identificado.")
-    estado: Optional[str] = Field(default=None, description="Estado de origem do documento.")
-    dimensao: Optional[str] = Field(default=None, description="Dimensão analítica: Normativa, Operacional, Governança, Controle ou Capacitação.")
-    instrumento_mrosc: Optional[str] = Field(default=None, description="Instrumento MROSC: Regulamentação, Execução, Monitoramento, Prestação de contas, Chamamento público ou Outro.")
-    tem_fluxo_operacional: Optional[bool] = Field(default=None, description="Se o documento contém fluxo operacional.")
-    tem_instrumentos_gestao: Optional[bool] = Field(default=None, description="Se o documento contém instrumentos de gestão.")
+def _build_analysis_model(schema_fields: List[Dict]) -> type:
+    """Builds AnalysisResult model dynamically from schema definition."""
+    field_definitions = {}
+    for config in schema_fields:
+        field_name = config.get("nome")
+        if not field_name:
+            continue
+            
+        field_type_str = config.get("tipo", "str")
+        description = config.get("descricao", "")
+        
+        if field_type_str == "bool":
+            field_type = bool
+            field_definitions[field_name] = (field_type, Field(description=description))
+        elif field_type_str == "bool_opt":
+            field_type = Optional[bool]
+            field_definitions[field_name] = (field_type, Field(default=None, description=description))
+        elif field_type_str == "str_opt":
+            field_type = Optional[str]
+            field_definitions[field_name] = (field_type, Field(default=None, description=description))
+        else: # default a "str"
+            field_type = str
+            field_definitions[field_name] = (field_type, Field(description=description))
+    
+    if not field_definitions:
+        # Fallback de segurança mínimo
+        field_definitions["resumo"] = (str, Field(description="Resumo do documento."))
+        
+    return create_model("AnalysisResult", **field_definitions)
 
 class DocumentProcessor:
     MAX_FILE_PROCESSING_WAIT = 120  # segundos máximos para aguardar processamento de PDF no Gemini
@@ -98,7 +114,7 @@ class DocumentProcessor:
         before_sleep=before_sleep_log(logger, logging.WARNING),
         reraise=True
     )
-    def _call_gemini(self, prompt: str, parts: List[types.Part]) -> dict:
+    def _call_gemini(self, prompt: str, parts: List[types.Part], response_model: type) -> dict:
         """Chama a API Gemini com retry automático para erros transientes."""
         response = self.client.models.generate_content(
             model=Config.MODEL_ID,
@@ -106,7 +122,7 @@ class DocumentProcessor:
             config=types.GenerateContentConfig(
                 temperature=0.0, 
                 response_mime_type="application/json",
-                response_schema=AnalysisResult
+                response_schema=response_model
             )
         )
         
@@ -115,14 +131,15 @@ class DocumentProcessor:
         
         return json.loads(response.text.strip())
 
-    def analyze(self, parts: List[types.Part], url: str, estado: str) -> Optional[Dict]:
+    def analyze(self, parts: List[types.Part], url: str, template_data: Dict, variables: Dict) -> Optional[Dict]:
         if not parts:
             return None
         
-        prompt = get_analysis_prompt(estado)
+        prompt = get_analysis_prompt(template_data, variables)
+        response_model = _build_analysis_model(template_data.get("schema_de_saida", []))
         
         try:
-            return self._call_gemini(prompt, parts)
+            return self._call_gemini(prompt, parts, response_model)
         except Exception as e:
             logger.error(f"⚠️ Falha na análise Gemini após retries: {e}")
             return None

@@ -11,9 +11,9 @@ from frontend.state import NOMES_ESTADOS, reset_state, safe_rerun
 from frontend.components import render_section_header, render_terminal, render_divider
 
 
-def render_manual_mode(estado: str, limite: int):
+def render_manual_mode(template_data: dict, variables: dict, limite: int):
     """Renderiza o modo de execução manual com logs laterais."""
-    nome_estado = NOMES_ESTADOS.get(estado, estado)
+    template_nome = template_data.get("nome", "Sem nome")
 
     _, col_stop = st.columns([4, 1])
     with col_stop:
@@ -25,7 +25,7 @@ def render_manual_mode(estado: str, limite: int):
 
     # Inicializar automator e buscar links
     if not st.session_state.automator:
-        st.session_state.automator = MROSCAutomator(uf=estado, estado=nome_estado, limit=limite)
+        st.session_state.automator = MROSCAutomator(template_data=template_data, variables=variables, limit=limite)
         with st.spinner("Realizando buscas na internet... (Aguarde)"):
             st.session_state.links = st.session_state.automator.searcher.collect_links()
         st.session_state.manual_step = "next"

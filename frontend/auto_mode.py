@@ -10,9 +10,9 @@ from frontend.state import NOMES_ESTADOS, reset_state, safe_rerun
 from frontend.components import render_section_header, render_terminal, render_divider
 
 
-def render_auto_mode(estado: str, limite: int):
+def render_auto_mode(template_data: dict, variables: dict, limite: int):
     """Renderiza o modo de execução automática com logs sempre visíveis na lateral."""
-    nome_estado = NOMES_ESTADOS.get(estado, estado)
+    template_nome = template_data.get("nome", "Sem Nome")
 
     _, col_stop = st.columns([4, 1])
     with col_stop:
@@ -57,7 +57,7 @@ def render_auto_mode(estado: str, limite: int):
         _update_log_panel(log_placeholder)
 
     if not st.session_state.automator:
-        st.session_state.automator = MROSCAutomator(uf=estado, estado=nome_estado, limit=limite)
+        st.session_state.automator = MROSCAutomator(template_data=template_data, variables=variables, limit=limite)
 
     def automator_callback(event):
         try:

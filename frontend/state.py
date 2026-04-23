@@ -25,8 +25,8 @@ def init_session_state():
         "current_temp_path": None,
         "modo_manual": False,
         "dialog_open": False,
-        "dialog_action": None,
-    }
+        "dialog_action": None,        "template_data": None,
+        "template_variables": {}    }
     for key, value in defaults.items():
         if key not in st.session_state:
             st.session_state[key] = value
