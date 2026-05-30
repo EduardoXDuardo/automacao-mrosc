@@ -22,6 +22,9 @@ render_hero_header()
 
 # ── Sidebar ──
 template_data, variables, limite, modo_manual = render_sidebar()
+template_data = template_data or st.session_state.get("template_data")
+variables = variables or st.session_state.get("template_variables", {})
+limite = st.session_state.get("limite", limite)
 
 # ── Roteamento de Páginas ──
 if st.session_state.running_state == "idle":

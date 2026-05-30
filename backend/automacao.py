@@ -61,6 +61,7 @@ class MROSCAutomator:
             
             if isinstance(analysis, dict):
                 is_relevante = analysis.get("relevante", True)
+                salvo = False
                 if is_relevante:
                     salvo = self.output_manager.process_and_save_document(url, temp_path, analysis)
                 if salvo:

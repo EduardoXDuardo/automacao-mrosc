@@ -105,7 +105,12 @@ def _process_document(automator, url):
             st.session_state.manual_step = "next"
             safe_rerun()
         
-        analysis = automator.processor.analyze(parts, url, automator.estado)
+        analysis = automator.processor.analyze(
+            parts,
+            url,
+            automator.template_data,
+            automator.variables,
+        )
         st.session_state.current_analysis = analysis
         st.session_state.manual_step = "waiting"
         safe_rerun()

@@ -151,6 +151,10 @@ def inject_css():
         background: linear-gradient(180deg, #0f172a 0%, #111827 100%) !important;
         border-right: 1px solid var(--border-glass) !important;
     }
+    section[data-testid="stSidebar"] > div,
+    section[data-testid="stSidebar"] [data-testid="stSidebarContent"] {
+        background: transparent !important;
+    }
     section[data-testid="stSidebar"] .stMarkdown p,
     section[data-testid="stSidebar"] .stMarkdown h3,
     section[data-testid="stSidebar"] .stMarkdown h4 {
@@ -158,10 +162,36 @@ def inject_css():
     }
     section[data-testid="stSidebar"] .stSelectbox label,
     section[data-testid="stSidebar"] .stSlider label,
-    section[data-testid="stSidebar"] .stCheckbox label {
+    section[data-testid="stSidebar"] .stCheckbox label,
+    section[data-testid="stSidebar"] .stTextInput label,
+    section[data-testid="stSidebar"] .stFileUploader label {
         color: var(--text-secondary) !important;
         font-weight: 500 !important;
         font-size: 0.85rem !important;
+    }
+    section[data-testid="stSidebar"] [data-testid="stWidgetLabel"] p,
+    section[data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] small,
+    section[data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] svg,
+    section[data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] div {
+        color: var(--text-secondary) !important;
+        fill: var(--text-secondary) !important;
+    }
+    section[data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] {
+        background: rgba(255, 255, 255, 0.04) !important;
+        border: 1px dashed rgba(148, 163, 184, 0.28) !important;
+        border-radius: var(--radius-sm) !important;
+    }
+    section[data-testid="stSidebar"] input,
+    section[data-testid="stSidebar"] textarea {
+        background: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid var(--border-glass) !important;
+        color: var(--text-primary) !important;
+        border-radius: var(--radius-sm) !important;
+    }
+    section[data-testid="stSidebar"] input:disabled {
+        color: var(--text-secondary) !important;
+        -webkit-text-fill-color: var(--text-secondary) !important;
+        opacity: 1 !important;
     }
     .sidebar-header {
         padding: 16px 0 18px 0;
@@ -189,6 +219,16 @@ def inject_css():
         margin: 24px 0 10px 0;
         padding-bottom: 6px;
         border-bottom: 1px solid var(--border-subtle);
+    }
+    .sidebar-template-name {
+        margin: 12px 0 4px 0;
+        padding: 10px 12px;
+        background: rgba(59, 130, 246, 0.08);
+        border: 1px solid rgba(59, 130, 246, 0.16);
+        border-radius: var(--radius-sm);
+        color: var(--text-primary);
+        font-size: 0.85rem;
+        font-weight: 700;
     }
     .sidebar-status-card {
         margin-top: 24px;
