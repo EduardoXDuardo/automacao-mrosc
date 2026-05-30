@@ -9,7 +9,12 @@ from frontend.manual_mode import render_manual_mode
 from frontend.template_editor import render_template_editor
 
 # ── Configuração da Página ──
-st.set_page_config(page_title="Automação MROSC", layout="wide", page_icon="⚡")
+st.set_page_config(
+    page_title="Automação MROSC",
+    layout="wide",
+    page_icon="⚡",
+    initial_sidebar_state="expanded",
+)
 
 # ── Design System ──
 inject_css()

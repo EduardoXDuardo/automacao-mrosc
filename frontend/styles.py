@@ -38,6 +38,10 @@ def inject_css():
     }
     
     /* ── Base ── */
+    * {
+        box-sizing: border-box;
+    }
+
     html, body, [class*="css"] {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
         -webkit-font-smoothing: antialiased;
@@ -46,15 +50,57 @@ def inject_css():
     .stApp {
         background: var(--bg-primary) !important;
         color: var(--text-primary) !important;
+        min-height: 100vh;
     }
     .stApp > header { background: transparent !important; }
-    .stMainBlockContainer {
-        padding-top: 1rem !important;
+    .stMainBlockContainer,
+    .block-container {
+        padding: 3.25rem 2rem 2.5rem 2rem !important;
         max-width: 1280px !important;
+        width: 100% !important;
     }
 
     /* ── Hide Streamlit defaults ── */
-    #MainMenu, footer, header[data-testid="stHeader"] { visibility: hidden !important; }
+    #MainMenu, footer { visibility: hidden !important; }
+    header[data-testid="stHeader"] {
+        visibility: visible !important;
+        background: transparent !important;
+        height: 2.75rem !important;
+        z-index: 999999 !important;
+        pointer-events: auto !important;
+    }
+    header[data-testid="stHeader"] button,
+    [data-testid="stSidebarCollapsedControl"] button,
+    button[aria-label="Open sidebar"],
+    button[title="Open sidebar"] {
+        background: rgba(15, 23, 42, 0.88) !important;
+        border: 1px solid rgba(148, 163, 184, 0.25) !important;
+        border-radius: var(--radius-sm) !important;
+        color: var(--text-primary) !important;
+        box-shadow: 0 8px 22px rgba(0, 0, 0, 0.22) !important;
+    }
+    header[data-testid="stHeader"] button:hover,
+    [data-testid="stSidebarCollapsedControl"] button:hover,
+    button[aria-label="Open sidebar"]:hover,
+    button[title="Open sidebar"]:hover {
+        background: rgba(30, 41, 59, 0.95) !important;
+        border-color: rgba(59, 130, 246, 0.38) !important;
+    }
+    header[data-testid="stHeader"] svg,
+    [data-testid="stSidebarCollapsedControl"] svg,
+    button[aria-label="Open sidebar"] svg,
+    button[title="Open sidebar"] svg {
+        color: var(--text-primary) !important;
+        fill: var(--text-primary) !important;
+    }
+    [data-testid="stSidebarCollapsedControl"] {
+        visibility: visible !important;
+        display: flex !important;
+        position: fixed !important;
+        top: 0.7rem !important;
+        left: 0.7rem !important;
+        z-index: 1000000 !important;
+    }
 
     /* ── Keyframe Animations ── */
     @keyframes fadeInUp {
@@ -79,15 +125,19 @@ def inject_css():
     /* ── Header ── */
     .hero-header {
         position: relative;
-        padding: 52px 32px 44px 32px;
+        padding: 36px 28px 32px 28px;
         text-align: center;
         background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 35%, #312e81 60%, #1e1b4b 85%, #0f172a 100%);
         background-size: 300% 300%;
         animation: gradientShift 8s ease infinite;
-        border-radius: var(--radius-lg);
-        margin-bottom: 36px;
+        border-radius: var(--radius-md);
+        margin-bottom: 28px;
         border: 1px solid var(--border-glass);
         overflow: hidden;
+    }
+    .hero-header > * {
+        position: relative;
+        z-index: 1;
     }
     .hero-header::before {
         content: '';
@@ -113,8 +163,8 @@ def inject_css():
     }
     .hero-title {
         font-weight: 900;
-        font-size: 2.8rem;
-        letter-spacing: -1.5px;
+        font-size: 2.35rem;
+        letter-spacing: 0;
         background: linear-gradient(135deg, #f1f5f9 0%, #c7d2fe 50%, #a5b4fc 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
@@ -124,10 +174,10 @@ def inject_css():
     }
     .hero-subtitle {
         color: var(--text-secondary);
-        font-size: 1.05rem;
+        font-size: 1rem;
         font-weight: 400;
         margin-top: 12px;
-        letter-spacing: 0.2px;
+        letter-spacing: 0;
         max-width: 550px;
         margin-left: auto;
         margin-right: auto;
@@ -142,7 +192,7 @@ def inject_css():
         font-size: 0.75rem;
         font-weight: 600;
         color: #a5b4fc;
-        letter-spacing: 0.5px;
+        letter-spacing: 0;
         text-transform: uppercase;
     }
 
@@ -202,7 +252,7 @@ def inject_css():
         font-size: 1.1rem;
         font-weight: 700;
         color: var(--text-primary);
-        letter-spacing: -0.3px;
+        letter-spacing: 0;
     }
     .sidebar-desc {
         font-size: 0.8rem;
@@ -214,7 +264,7 @@ def inject_css():
         font-size: 0.68rem;
         font-weight: 600;
         text-transform: uppercase;
-        letter-spacing: 1.5px;
+        letter-spacing: 0;
         color: var(--text-muted);
         margin: 24px 0 10px 0;
         padding-bottom: 6px;
@@ -247,8 +297,10 @@ def inject_css():
         font-family: 'Inter', sans-serif !important;
         padding: 0.65rem 1.4rem !important;
         transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
-        letter-spacing: -0.1px !important;
+        letter-spacing: 0 !important;
         font-size: 0.9rem !important;
+        min-height: 2.6rem !important;
+        white-space: normal !important;
     }
     .stButton > button[kind="primary"],
     .stButton > button[data-testid="stBaseButton-primary"] {
@@ -298,7 +350,7 @@ def inject_css():
         font-weight: 500 !important;
         font-size: 0.85rem !important;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
+        letter-spacing: 0;
     }
 
     /* ── Progress Bar ── */
@@ -318,9 +370,35 @@ def inject_css():
         border: 1px solid var(--border-glass) !important;
         border-radius: var(--radius-sm) !important;
         color: var(--text-primary) !important;
+        min-height: 2.65rem !important;
     }
     div[data-baseweb="select"] > div:hover {
         border-color: rgba(99, 102, 241, 0.4) !important;
+    }
+    .stTextInput input,
+    .stTextArea textarea,
+    .stNumberInput input {
+        background: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid var(--border-glass) !important;
+        border-radius: var(--radius-sm) !important;
+        color: var(--text-primary) !important;
+        caret-color: var(--text-primary) !important;
+    }
+    .stTextInput input:focus,
+    .stTextArea textarea:focus,
+    .stNumberInput input:focus,
+    div[data-baseweb="select"] > div:focus-within {
+        border-color: rgba(59, 130, 246, 0.52) !important;
+        box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.22) !important;
+    }
+    .stTextInput input::placeholder,
+    .stTextArea textarea::placeholder {
+        color: var(--text-muted) !important;
+    }
+    .stFileUploader [data-testid="stFileUploaderDropzone"] {
+        background: rgba(255, 255, 255, 0.04) !important;
+        border: 1px dashed rgba(148, 163, 184, 0.28) !important;
+        border-radius: var(--radius-sm) !important;
     }
     .stSlider [data-baseweb="slider"] div[role="slider"] {
         background: var(--accent-indigo) !important;
@@ -352,7 +430,7 @@ def inject_css():
     /* ── Feature Cards ── */
     .feature-grid {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
         gap: 20px;
         margin: 28px 0;
     }
@@ -376,7 +454,7 @@ def inject_css():
     .feature-icon { font-size: 2rem; margin-bottom: 14px; display: inline-block; }
     .feature-title {
         font-size: 1rem; font-weight: 700; color: var(--text-primary);
-        margin-bottom: 8px; letter-spacing: -0.3px;
+        margin-bottom: 8px; letter-spacing: 0;
     }
     .feature-desc { font-size: 0.82rem; color: var(--text-muted); line-height: 1.55; }
 
@@ -419,7 +497,7 @@ def inject_css():
     .terminal-title-text {
         margin-left: 10px;
         font-size: 0.72rem; font-weight: 600; color: var(--text-muted);
-        text-transform: uppercase; letter-spacing: 1px;
+        text-transform: uppercase; letter-spacing: 0;
     }
     .terminal-body {
         padding: 18px 20px;
@@ -450,7 +528,7 @@ def inject_css():
     }
     .section-header-icon { font-size: 1.3rem; }
     .section-header-title {
-        font-size: 1.15rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.4px;
+        font-size: 1.15rem; font-weight: 700; color: var(--text-primary); letter-spacing: 0;
     }
     .section-header-line {
         flex: 1; height: 1px;
@@ -461,7 +539,7 @@ def inject_css():
     .status-chip {
         display: inline-flex; align-items: center; gap: 6px;
         padding: 6px 14px; border-radius: 20px;
-        font-size: 0.78rem; font-weight: 600; letter-spacing: 0.3px;
+        font-size: 0.78rem; font-weight: 600; letter-spacing: 0;
     }
     .status-chip.running {
         background: rgba(99, 102, 241, 0.12);
@@ -480,7 +558,7 @@ def inject_css():
         border-bottom: 1px solid var(--border-glass);
         font-weight: 600; font-size: 0.85rem;
         color: var(--text-secondary);
-        text-transform: uppercase; letter-spacing: 0.5px;
+        text-transform: uppercase; letter-spacing: 0;
         display: flex; align-items: center; gap: 8px;
         background: var(--gradient-card);
         border: 1px solid var(--border-glass);
@@ -491,7 +569,7 @@ def inject_css():
     .badge-relevante {
         display: inline-flex; align-items: center; gap: 6px;
         padding: 8px 18px; border-radius: var(--radius-sm);
-        font-weight: 700; font-size: 0.88rem; letter-spacing: 0.2px;
+        font-weight: 700; font-size: 0.88rem; letter-spacing: 0;
     }
     .badge-relevante.yes {
         background: rgba(16, 185, 129, 0.12);
@@ -567,5 +645,69 @@ def inject_css():
     .stMarkdown h1, .stMarkdown h2, .stMarkdown h3, .stMarkdown h4 { color: var(--text-primary) !important; }
     .stMarkdown strong { color: var(--text-primary) !important; }
     .stMarkdown a { color: var(--accent-blue) !important; }
+
+    .stForm {
+        background: rgba(255, 255, 255, 0.025) !important;
+        border: 1px solid var(--border-glass) !important;
+        border-radius: var(--radius-sm) !important;
+        padding: 18px !important;
+    }
+    div[data-testid="stVerticalBlockBorderWrapper"] {
+        border-color: var(--border-glass) !important;
+        border-radius: var(--radius-sm) !important;
+    }
+    div[data-testid="stDataFrame"],
+    div[data-testid="stTable"] {
+        border-radius: var(--radius-sm) !important;
+        overflow: hidden !important;
+        border: 1px solid var(--border-glass) !important;
+    }
+    code,
+    pre {
+        color: #c7d2fe !important;
+        background: rgba(15, 23, 42, 0.82) !important;
+        border-radius: 6px !important;
+    }
+
+    @media (max-width: 900px) {
+        .stMainBlockContainer,
+        .block-container {
+            padding: 3rem 1rem 1.75rem 1rem !important;
+        }
+        .hero-header {
+            padding: 28px 18px 24px 18px;
+            margin-bottom: 22px;
+        }
+        .hero-icon {
+            font-size: 2.1rem;
+        }
+        .hero-title {
+            font-size: 1.85rem;
+        }
+        .hero-subtitle {
+            font-size: 0.92rem;
+        }
+        .feature-grid {
+            grid-template-columns: 1fr;
+            gap: 14px;
+        }
+        .feature-card {
+            padding: 20px 18px;
+        }
+        .terminal-body {
+            max-height: 340px;
+            font-size: 0.74rem;
+        }
+        .section-header {
+            margin: 22px 0 12px 0;
+        }
+        .section-header-title {
+            font-size: 1rem;
+        }
+        .panel-header {
+            padding: 12px 14px;
+            font-size: 0.78rem;
+        }
+    }
 </style>
 """, unsafe_allow_html=True)
